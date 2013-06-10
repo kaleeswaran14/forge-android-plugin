@@ -1,5 +1,11 @@
 *.class
 
+.classpath
+.forge_settings
+.settings
+.project
+target
+
 # Package Files #
 *.jar
 *.war
