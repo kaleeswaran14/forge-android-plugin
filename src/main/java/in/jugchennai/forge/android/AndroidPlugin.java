@@ -15,11 +15,22 @@
 */
 package in.jugchennai.forge.android;
 
+import javax.enterprise.event.Event;
+import javax.inject.Inject;
+
+import org.jboss.forge.project.Project;
 import org.jboss.forge.project.facets.DependencyFacet;
 import org.jboss.forge.project.facets.JavaSourceFacet;
+import org.jboss.forge.project.facets.events.InstallFacets;
+import org.jboss.forge.shell.ShellColor;
+import org.jboss.forge.shell.ShellPrintWriter;
+import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
+import org.jboss.forge.shell.plugins.Command;
 import org.jboss.forge.shell.plugins.DefaultCommand;
 import org.jboss.forge.shell.plugins.Help;
+import org.jboss.forge.shell.plugins.Option;
+import org.jboss.forge.shell.plugins.PipeOut;
 import org.jboss.forge.shell.plugins.Plugin;
 import org.jboss.forge.shell.plugins.RequiresFacet;
 import org.jboss.forge.shell.plugins.RequiresProject;
@@ -39,16 +50,86 @@ import org.jboss.forge.shell.plugins.SetupCommand;
 @RequiresProject
 public class AndroidPlugin implements Plugin  {
 	
+    /** The shell. */
+    @Inject
+    private ShellPrompt shell;
+
+    /** The project. */
+    @Inject
+    private Project project;
+
+    /** The install. */
+    @Inject
+    private Event<InstallFacets> install;
+
+    /** The writer. */
+    @Inject
+    private ShellPrintWriter writer;
 	
-	
-	@SetupCommand
-	private void setup() {}
-	
-	@DefaultCommand
-	private void defaultCommand() {
+    /**
+     * The Enum Android CreationType.
+     */
+    enum CreationType {
+
+        /** The mv. */
+        A("ui"), /** The activity. */
+        AV("ui.v"); /** The activity and view. */
+
+        String packageName;
+
+        CreationType(String thePackageName) {
+            packageName = thePackageName;
+        }
+
+        String getPackageName() {
+            return packageName;
+        }
+    }
+    
+    /**
+     * The setup command for Android. This adds dependency to the current project
+     * 
+     * @param out the out
+     * @param moduleName the module name
+     */
+	@SetupCommand(help = "Installs basic setup to work with Android application.")
+	 public void setup(final PipeOut out) {
+		//, @Option(name = "module", shortName = "m", required = true, help = "The Module name to be installed.") final String moduleName
+		if (!this.project.hasFacet(AndroidFacet.class)) {
+		    this.install.fire(new InstallFacets(AndroidFacet.class));
+		}
 		
+		if (this.project.hasFacet(AndroidFacet.class)) {
+		    this.writer.println(ShellColor.GREEN, "Android is configured.");
+		}
+	}
+	
+    /**
+     * If android command is not executed with any argument this method will be called.
+     * 
+     * @param out the out
+     */
+	@DefaultCommand
+	private void defaultCommand(final PipeOut out) {
+        if (this.project.hasFacet(AndroidFacet.class)) {
+            out.println("Android is installed.");
+        } else {
+            out.println("Android is not installed. Use 'android setup' to install.");
+        }
 	}
 	
 	
-
+    /**
+     * Creates the activity.
+     * 
+     * @param out the out
+     * @param name the activity name
+     */
+    @Command(value = "create-activity", help = "Create a activity for the given name")
+    public void createMV(
+            final PipeOut out,
+            @Option(name = "name", shortName = "n", required = true, help = "Name of the activity to be created.")
+            final String mvName) {
+    }
+    
 }
