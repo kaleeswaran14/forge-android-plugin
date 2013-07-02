@@ -67,26 +67,6 @@ public class AndroidPlugin implements Plugin  {
     private ShellPrintWriter writer;
 	
     /**
-     * The Enum Android CreationType.
-     */
-    enum CreationType {
-
-        /** The mv. */
-        A("ui"), /** The activity. */
-        AV("ui.v"); /** The activity and view. */
-
-        String packageName;
-
-        CreationType(String thePackageName) {
-            packageName = thePackageName;
-        }
-
-        String getPackageName() {
-            return packageName;
-        }
-    }
-    
-    /**
      * The setup command for Android. This adds dependency to the current project
      * 
      * @param out the out
@@ -125,7 +105,7 @@ public class AndroidPlugin implements Plugin  {
      * @param out the out
      * @param name the activity name
      */
-    @Command(value = "create-activity", help = "Create a activity for the given name")
+    @Command(value = "activity-create", help = "Create a activity for the given name")
     public void createMV(
             final PipeOut out,
             @Option(name = "name", shortName = "n", required = true, help = "Name of the activity to be created.")

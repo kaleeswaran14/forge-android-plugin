@@ -15,10 +15,18 @@
 */
 package in.jugchennai.forge.android;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.List;
 
 import javax.inject.Inject;
 
+import org.apache.maven.model.Build;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
+import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.jboss.forge.maven.MavenCoreFacet;
 import org.jboss.forge.project.dependencies.Dependency;
 import org.jboss.forge.project.dependencies.DependencyBuilder;
 import org.jboss.forge.project.facets.BaseFacet;
@@ -28,6 +36,7 @@ import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.RequiresFacet;
+
 
 /**
  * 
@@ -55,9 +64,14 @@ public class AndroidFacet extends BaseFacet {
 	@Override
 	public boolean install() {
         this.dependencyFacet = this.project.getFacet(DependencyFacet.class);
-        this.dependencyFacet.addRepository("JBoss Maven repository", "https://repository.jboss.org/nexus/content/groups/public-jboss/");
+//        String androidHome = System.getenv("ANDROID_HOME");
+//        if (StringUtils.isEmpty(androidHome)) {
+//        	this.writer.println(ShellColor.RED, "Android Home is not set in environment variable ");
+//        	return false;
+//        }
         installDependencies(getAndroidCoreDependency(), true);
-		return false;
+        installplugin(androidBuildPlugin());
+		return true;
 	}
 
 	@Override
@@ -72,7 +86,7 @@ public class AndroidFacet extends BaseFacet {
 	public boolean uninstall() {
         this.dependencyFacet = this.project.getFacet(DependencyFacet.class);
         this.dependencyFacet.removeDependency(getAndroidCoreDependency());
-        this.dependencyFacet.removeRepository("JBoss Maven repository");
+        removeplugin(androidBuildPlugin());
 		return true;
 	}
 	
@@ -86,7 +100,7 @@ public class AndroidFacet extends BaseFacet {
 
         final List<Dependency> versions = this.dependencyFacet.resolveAvailableVersions(dependency);
         if (askVersion) {
-            final Dependency dep = this.shell.promptChoiceTyped("What version do you want to install?", versions);
+            final Dependency dep = this.shell.promptChoiceTyped("What version do you want to install ?", versions);
             dependency.setVersion(dep.getVersion());
         }
         this.dependencyFacet.addDirectDependency(dependency);
@@ -101,7 +115,35 @@ public class AndroidFacet extends BaseFacet {
      * @return the dependency builder
      */
     private static DependencyBuilder getAndroidCoreDependency() {
-        return DependencyBuilder.create().setGroupId("com.google.android").setArtifactId("android").setVersion("2.1.2").setScopeType("provided");
+        return DependencyBuilder.create().setGroupId("com.google.android").setArtifactId("android").setVersion("4.1.1.4").setScopeType("provided");
+    }
+    
+    /**
+     * Method to add the specified plugin into build tag of the project.
+     * 
+     * @param Plugin the plugin
+     */
+    private void installplugin(Plugin plugin) {
+    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
+    	Model pom = facet.getPOM();
+    	Build build = pom.getBuild();
+    	if (build == null) {
+    		build = new Build();
+    		pom.setBuild(build);
+    	}
+    	pom.getBuild().addPlugin(plugin);
+    	facet.setPOM(pom);
+    }
+    
+    /**
+     * Method to removes the specified plugin into build tag of the project.
+     * 
+     * @param Plugin the plugin
+     */
+    private void removeplugin(Plugin plugin) {
+    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
+    	Model pom = facet.getPOM();
+    	pom.getBuild().removePlugin(plugin);
     }
     
     /**
@@ -109,8 +151,40 @@ public class AndroidFacet extends BaseFacet {
      * 
      * @return the dependency builder
      */
-    // TODO : here we need to add a plugin inside the build -> plugins tag
-    private static DependencyBuilder androidBuildPlugin() {
-		return null;
+    private Plugin androidBuildPlugin() {
+    	Plugin mavenAndroidPlugin = new Plugin();
+    	mavenAndroidPlugin.setGroupId("com.jayway.maven.plugins.android.generation2");
+    	mavenAndroidPlugin.setArtifactId("maven-android-plugin");
+    	mavenAndroidPlugin.setConfiguration(pluginConfiguration("7"));
+    	mavenAndroidPlugin.setVersion("2.8.4");
+    	mavenAndroidPlugin.setExtensions(true);
+		return mavenAndroidPlugin;
     }
+    
+    /**
+     * Android plugin configuration.
+     * 
+     * @return the Object
+     */
+    private Object pluginConfiguration(String platformVersion) {
+		try {
+			return Xpp3DomBuilder.build(new StringReader(
+			            "<configuration>\n" +
+			            " <androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>\n" +
+			            " <assetsDirectory>${project.basedir}/assets</assetsDirectory>\n" +
+			            " <resourceDirectory>${project.basedir}/res</resourceDirectory>\n" +
+			            " <nativeLibrariesDirectory>${project.basedir}/src/main/native</nativeLibrariesDirectory>\n" +
+			            " <sdk>\n" +
+			            " <platform>" + platformVersion + "</platform>\n" +
+			            " </sdk>\n" +
+			            " <deleteConflictingFiles>true</deleteConflictingFiles>\n" +
+			            " <undeployBeforeDeploy>true</undeployBeforeDeploy>\n" +
+			            "</configuration>"));
+		 } catch (XmlPullParserException e) {
+		     throw new IllegalStateException(e);
+		 } catch (IOException e) {
+		     throw new java.lang.IllegalStateException(e);
+		 }
+    }
+    
 }

@@ -56,6 +56,12 @@
         <version>${forge.api.version}</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.jboss.forge</groupId>
+        <artifactId>forge-maven-api</artifactId>
+        <version>${forge.api.version}</version>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>
@@ -84,11 +90,11 @@
       <artifactId>forge-shell</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.apache.velocity</groupId>
-      <artifactId>velocity</artifactId>
-      <version>1.7</version>
-    </dependency>
+	<dependency>
+		<groupId>org.freemarker</groupId>
+		<artifactId>freemarker</artifactId>
+		<version>2.3.19</version>
+	</dependency>
   </dependencies>
   <repositories>
     <repository>
