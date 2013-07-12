@@ -7,6 +7,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+import org.apache.commons.lang.StringUtils;
 import org.jboss.forge.parser.JavaParser;
 import org.jboss.forge.parser.java.JavaClass;
 import org.jboss.forge.project.Project;
@@ -17,7 +18,7 @@ import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 
-public final class Constants {
+public final class Utils {
 	
     /** The Constant TEMPLATE_KEY_PACKAGE. */
     public static final String TEMPLATE_KEY_PACKAGE = "package";
@@ -39,7 +40,7 @@ public final class Constants {
 
     private static Configuration cfg = new Configuration();
     static {
-        cfg.setClassForTemplateLoading(Constants.class, "../../../../template");
+        cfg.setClassForTemplateLoading(Utils.class, "../../../../../templates");
         cfg.setObjectWrapper(new DefaultObjectWrapper());
     }
     
@@ -66,7 +67,7 @@ public final class Constants {
     /**
      * Private constructor.
      */
-    private Constants() {
+    private Utils() {
     	
     }
     
@@ -93,5 +94,14 @@ public final class Constants {
 		final JavaClass javaClass = JavaParser.parse(JavaClass.class, writer.toString());
 		java.saveJavaSource(javaClass);
 
+	}
+	
+	public static String capitalize(String orgString) {
+		return StringUtils.capitalize(orgString);
+		
+	}
+	
+	public static String uncapitalize(String orgString) {
+		return StringUtils.uncapitalize(orgString);
 	}
 }

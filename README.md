@@ -6,11 +6,15 @@ Forge plugin for Android Development
 TODO
 ========
 1) Check ANDROID_HOME on setup
-2) Use freemaker
-3) Create resource files
-	defaultActivity xml and class
-	R file
-	metafiles
+2) Use freemaker - done
+3) Create resource files - done
+4) DefaultActivity xml and class - done
+5) R file - done
+6) Metafiles - done
+7) Overriding exisiting files
+8) Emulator version change
+9) Scaffolding
+10) Property file key and value pair add
 
 REF
 ========

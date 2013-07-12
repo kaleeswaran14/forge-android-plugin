@@ -1,10 +1,10 @@
-package $package;
+package ${settings.getTopLevelPacakge()};
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 
-public class ${activityName}Activity extends Activity {
+public class ${settings.getName()} extends Activity {
 
     private static String TAG = "my-android-application";
 

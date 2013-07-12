@@ -15,7 +15,14 @@
 */
 package in.jugchennai.forge.android;
 
+import freemarker.template.TemplateException;
+import in.jugchennai.forge.android.utils.TemplateSettings;
+import in.jugchennai.forge.android.utils.Utils;
+
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
@@ -23,6 +30,7 @@ import javax.inject.Inject;
 import org.jboss.forge.project.Project;
 import org.jboss.forge.project.facets.DependencyFacet;
 import org.jboss.forge.project.facets.JavaSourceFacet;
+import org.jboss.forge.project.facets.MetadataFacet;
 import org.jboss.forge.project.facets.events.InstallFacets;
 import org.jboss.forge.resources.DirectoryResource;
 import org.jboss.forge.resources.FileResource;
@@ -75,9 +83,11 @@ public class AndroidPlugin implements Plugin  {
      * 
      * @param out the out
      * @param moduleName the module name
+     * @throws TemplateException 
+     * @throws IOException 
      */
 	@SetupCommand(help = "Installs basic setup to work with Android application.")
-	 public void setup(final PipeOut out) {
+	 public void setup(final PipeOut out) throws IOException, TemplateException {
 		//, @Option(name = "module", shortName = "m", required = true, help = "The Module name to be installed.") final String moduleName
 		if (!this.project.hasFacet(AndroidFacet.class)) {
 		    this.install.fire(new InstallFacets(AndroidFacet.class));
@@ -99,25 +109,39 @@ public class AndroidPlugin implements Plugin  {
 		if (!manifestFile.exists()) {
 			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateManifest.ftl");
 			manifestFile.setContents(stream);
+			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "AndroidManifest.xml", "file"));
 		}
 		
 		FileResource<?> defaultPropFile = (FileResource<?>) projectRoot.getChild("default.properties");
 		if (!defaultPropFile.exists()) {
 			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateProperties.ftl");
 			defaultPropFile.setContents(stream);
+			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "default.properties", "file"));
 		}
 		
 		FileResource<?> layoutMainFile = (FileResource<?>) layoutDirectory.getChild("main.xml");
 		if (!layoutMainFile.exists()) {
 			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateLayoutMain.ftl");
-			layoutMainFile.setContents(stream);	
+			layoutMainFile.setContents(stream);
+			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "main.xml", "file"));
 		}
 		
 		FileResource<?> valuesStringsFile = (FileResource<?>) valuesDirectory.getChild("strings.xml");
 		if (!valuesStringsFile.exists()) {
 			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateStrings.ftl");
 			valuesStringsFile.setContents(stream);
+			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "strings.xml", "file"));
 		}
+		
+		// activity creation
+        final MetadataFacet metadata = this.project.getFacet(MetadataFacet.class);
+        String projectName = metadata.getProjectName();
+		TemplateSettings settings = new TemplateSettings(Utils.capitalize(projectName) + "Activity", metadata.getTopLevelPackage());
+        final Map<String, TemplateSettings> context = new HashMap<String, TemplateSettings>();
+        settings.setTopLevelPacakge(metadata.getTopLevelPackage());
+        context.put("settings", settings);
+        Utils.createJavaFileUsingTemplate(this.project, "TemplateActivity.ftl", context);
+        out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, projectName, "class"));
 		
 		if (this.project.hasFacet(AndroidFacet.class)) {
 		    this.writer.println(ShellColor.GREEN, "Android is configured.");

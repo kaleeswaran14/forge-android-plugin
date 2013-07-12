@@ -49,6 +49,7 @@ import org.jboss.forge.shell.plugins.RequiresFacet;
 @Alias("org.android")
 @RequiresFacet({DependencyFacet.class})
 public class AndroidFacet extends BaseFacet {
+	public static final String SUCCESS_MSG_FMT = "***SUCCESS*** %s %s has been installed.";
 
     /** The shell. */
     @Inject
