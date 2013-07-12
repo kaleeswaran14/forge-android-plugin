@@ -15,13 +15,17 @@
 */
 package in.jugchennai.forge.android;
 
+import java.io.File;
+
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
 import org.jboss.forge.project.Project;
 import org.jboss.forge.project.facets.DependencyFacet;
 import org.jboss.forge.project.facets.JavaSourceFacet;
+import org.jboss.forge.project.facets.ResourceFacet;
 import org.jboss.forge.project.facets.events.InstallFacets;
+import org.jboss.forge.resources.DirectoryResource;
 import org.jboss.forge.shell.ShellColor;
 import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
@@ -78,6 +82,26 @@ public class AndroidPlugin implements Plugin  {
 		if (!this.project.hasFacet(AndroidFacet.class)) {
 		    this.install.fire(new InstallFacets(AndroidFacet.class));
 		}
+		DirectoryResource projectRoot = this.project.getProjectRoot();
+		DirectoryResource assetsDirectory = projectRoot.getOrCreateChildDirectory("assets");
+		DirectoryResource resDirectory = projectRoot.getOrCreateChildDirectory("res");
+		
+		// res inner directories
+		DirectoryResource layoutDirectory = resDirectory.getOrCreateChildDirectory("layout");
+		resDirectory.getOrCreateChildDirectory("drawable-hdpi");
+		resDirectory.getOrCreateChildDirectory("drawable-ldpi");
+		resDirectory.getOrCreateChildDirectory("drawable-mdpi");
+		DirectoryResource valuesDirectory = resDirectory.getOrCreateChildDirectory("values");
+		
+		// java package
+//		projectRoot.getOrCreateChildDirectory("src").getOrCreateChildDirectory("main").getOrCreateChildDirectory("java");
+		
+		// manifest and default.properties file
+//		projectRoot.getChild("AndroidManifest.xml");
+//		projectRoot.getChild("default.properties");
+		
+//		ResourceFacet resourceFacet = this.project.getFacet(ResourceFacet.class);
+//		File rbPropertiesFile = resourceFacet.createResource(new char[0], "jrebirth.properties").getUnderlyingResourceObject();
 		
 		if (this.project.hasFacet(AndroidFacet.class)) {
 		    this.writer.println(ShellColor.GREEN, "Android is configured.");
