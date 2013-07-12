@@ -15,7 +15,7 @@
 */
 package in.jugchennai.forge.android;
 
-import java.io.File;
+import java.io.InputStream;
 
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
@@ -23,9 +23,9 @@ import javax.inject.Inject;
 import org.jboss.forge.project.Project;
 import org.jboss.forge.project.facets.DependencyFacet;
 import org.jboss.forge.project.facets.JavaSourceFacet;
-import org.jboss.forge.project.facets.ResourceFacet;
 import org.jboss.forge.project.facets.events.InstallFacets;
 import org.jboss.forge.resources.DirectoryResource;
+import org.jboss.forge.resources.FileResource;
 import org.jboss.forge.shell.ShellColor;
 import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
@@ -83,7 +83,7 @@ public class AndroidPlugin implements Plugin  {
 		    this.install.fire(new InstallFacets(AndroidFacet.class));
 		}
 		DirectoryResource projectRoot = this.project.getProjectRoot();
-		DirectoryResource assetsDirectory = projectRoot.getOrCreateChildDirectory("assets");
+		projectRoot.getOrCreateChildDirectory("assets");
 		DirectoryResource resDirectory = projectRoot.getOrCreateChildDirectory("res");
 		
 		// res inner directories
@@ -93,15 +93,22 @@ public class AndroidPlugin implements Plugin  {
 		resDirectory.getOrCreateChildDirectory("drawable-mdpi");
 		DirectoryResource valuesDirectory = resDirectory.getOrCreateChildDirectory("values");
 		
-		// java package
-//		projectRoot.getOrCreateChildDirectory("src").getOrCreateChildDirectory("main").getOrCreateChildDirectory("java");
-		
 		// manifest and default.properties file
-//		projectRoot.getChild("AndroidManifest.xml");
-//		projectRoot.getChild("default.properties");
+		FileResource<?> manifestFile = (FileResource<?>) projectRoot.getChild("AndroidManifest.xml");
+		InputStream stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateManifest.ftl");
+		manifestFile.setContents(stream);
 		
-//		ResourceFacet resourceFacet = this.project.getFacet(ResourceFacet.class);
-//		File rbPropertiesFile = resourceFacet.createResource(new char[0], "jrebirth.properties").getUnderlyingResourceObject();
+		FileResource<?> defaultPropFile = (FileResource<?>) projectRoot.getChild("default.properties");
+		stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateProperties.ftl");
+		defaultPropFile.setContents(stream);
+		
+		FileResource<?> layoutMainFile = (FileResource<?>) layoutDirectory.getChild("main.xml");
+		stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateLayoutMain.ftl");
+		layoutMainFile.setContents(stream);
+		
+		FileResource<?> valuesStringsFile = (FileResource<?>) valuesDirectory.getChild("strings.xml");
+		stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateStrings.ftl");
+		valuesStringsFile.setContents(stream);
 		
 		if (this.project.hasFacet(AndroidFacet.class)) {
 		    this.writer.println(ShellColor.GREEN, "Android is configured.");
@@ -130,10 +137,35 @@ public class AndroidPlugin implements Plugin  {
      * @param name the activity name
      */
     @Command(value = "activity-create", help = "Create a activity for the given name")
-    public void createMV(
+    public void createActivity(
             final PipeOut out,
             @Option(name = "name", shortName = "n", required = true, help = "Name of the activity to be created.")
-            final String mvName) {
+            final String name) {
     }
     
+    /**
+     * Creates the android project.
+     * 
+     * @param out the out
+     * @param name the project name
+     */
+    @Command(value = "project-create", help = "Create a android application with the given name")
+    public void createProject(
+            final PipeOut out,
+            @Option(name = "name", shortName = "n", required = true, help = "Name of the application to be created.")
+            final String name) {
+    }
+    
+    /**
+     * Change the emulator.
+     * 
+     * @param out the out
+     * @param number the emulator number
+     */
+    @Command(value = "change-emulator", help = "Change the emulator")
+    public void changeEmulator(
+            final PipeOut out,
+            @Option(name = "number", shortName = "n", required = true, help = "Emulator number.")
+            final String number) {
+    }
 }
