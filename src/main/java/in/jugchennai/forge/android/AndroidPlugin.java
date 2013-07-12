@@ -94,21 +94,30 @@ public class AndroidPlugin implements Plugin  {
 		DirectoryResource valuesDirectory = resDirectory.getOrCreateChildDirectory("values");
 		
 		// manifest and default.properties file
+		InputStream stream = null;
 		FileResource<?> manifestFile = (FileResource<?>) projectRoot.getChild("AndroidManifest.xml");
-		InputStream stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateManifest.ftl");
-		manifestFile.setContents(stream);
+		if (!manifestFile.exists()) {
+			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateManifest.ftl");
+			manifestFile.setContents(stream);
+		}
 		
 		FileResource<?> defaultPropFile = (FileResource<?>) projectRoot.getChild("default.properties");
-		stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateProperties.ftl");
-		defaultPropFile.setContents(stream);
+		if (!defaultPropFile.exists()) {
+			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateProperties.ftl");
+			defaultPropFile.setContents(stream);
+		}
 		
 		FileResource<?> layoutMainFile = (FileResource<?>) layoutDirectory.getChild("main.xml");
-		stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateLayoutMain.ftl");
-		layoutMainFile.setContents(stream);
+		if (!layoutMainFile.exists()) {
+			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateLayoutMain.ftl");
+			layoutMainFile.setContents(stream);	
+		}
 		
 		FileResource<?> valuesStringsFile = (FileResource<?>) valuesDirectory.getChild("strings.xml");
-		stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateStrings.ftl");
-		valuesStringsFile.setContents(stream);
+		if (!valuesStringsFile.exists()) {
+			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateStrings.ftl");
+			valuesStringsFile.setContents(stream);
+		}
 		
 		if (this.project.hasFacet(AndroidFacet.class)) {
 		    this.writer.println(ShellColor.GREEN, "Android is configured.");
