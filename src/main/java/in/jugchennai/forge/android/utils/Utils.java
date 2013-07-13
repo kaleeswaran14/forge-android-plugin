@@ -71,6 +71,17 @@ public final class Utils {
     	
     }
     
+	public static void createFileUsingTemplate(final Project project, final String templateFileName, final File fileObj, final Map<String, TemplateSettings> context) throws IOException, TemplateException {
+
+		Template template = null;
+		template = cfg.getTemplate(templateFileName);
+
+		FileWriter fileWriter = new FileWriter(fileObj);
+		template.process(context, fileWriter);
+		fileWriter.flush();
+
+	}
+	
 	public static void createResourceFileUsingTemplate(final Project project, final String templateFileName, final File fileObj, final Map<String, TemplateSettings> context) throws IOException, TemplateException {
 
 		Template template = null;

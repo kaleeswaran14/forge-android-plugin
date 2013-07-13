@@ -18,6 +18,7 @@ package in.jugchennai.forge.android;
 import in.jugchennai.forge.android.utils.TemplateSettings;
 import in.jugchennai.forge.android.utils.Utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import org.jboss.forge.project.facets.MetadataFacet;
 import org.jboss.forge.project.facets.events.InstallFacets;
 import org.jboss.forge.resources.DirectoryResource;
 import org.jboss.forge.resources.FileResource;
+import org.jboss.forge.resources.Resource;
 import org.jboss.forge.shell.ShellColor;
 import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
@@ -141,14 +143,22 @@ public class AndroidPlugin implements Plugin  {
         Utils.createJavaFileUsingTemplate(this.project, "TemplateActivity.ftl", context);
         out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, projectName, "class"));
         
-		// manifest and default.properties file
+		// manifest and default.properties file with activity name
 		FileResource<?> manifestFile = (FileResource<?>) projectRoot.getChild("AndroidManifest.xml");
 		if (!manifestFile.exists()) {
-			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateManifest.ftl");
-			manifestFile.setContents(stream);
+	        File jnlpTemplate = new File(projectRoot.getUnderlyingResourceObject().getPath() + System.getProperty("file.separator") + "AndroidManifest.xml");
+			Utils.createFileUsingTemplate(project, "TemplateManifest.ftl", jnlpTemplate, context);
 			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "AndroidManifest.xml", "file"));
 		}
 		
+		FileResource<?> valuesStringsFile = (FileResource<?>) valuesDirectory.getChild("strings.xml");
+		if (!valuesStringsFile.exists()) {
+			File stringsFileObj = new File(valuesDirectory.getUnderlyingResourceObject().getPath() + System.getProperty("file.separator") + "strings.xml");
+			Utils.createResourceFileUsingTemplate(project, "TemplateStrings.ftl", stringsFileObj, context);
+			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "strings.xml", "file"));
+		}
+		
+		// create files alone
 		FileResource<?> defaultPropFile = (FileResource<?>) projectRoot.getChild("default.properties");
 		if (!defaultPropFile.exists()) {
 			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateProperties.ftl");
@@ -161,13 +171,6 @@ public class AndroidPlugin implements Plugin  {
 			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateLayoutMain.ftl");
 			layoutMainFile.setContents(stream);
 			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "main.xml", "file"));
-		}
-		
-		FileResource<?> valuesStringsFile = (FileResource<?>) valuesDirectory.getChild("strings.xml");
-		if (!valuesStringsFile.exists()) {
-			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateStrings.ftl");
-			valuesStringsFile.setContents(stream);
-			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "strings.xml", "file"));
 		}
         
 		if (this.project.hasFacet(AndroidFacet.class)) {
