@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 
-public class ${settings.getName()} extends Activity {
+public class ${settings.getActivityName()} extends Activity {
 
     private static String TAG = "my-android-application";
 

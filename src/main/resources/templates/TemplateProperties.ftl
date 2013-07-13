@@ -1,4 +1,4 @@
 # File used by Eclipse to determine the target system
 # Project target.
-#target=android-7
-target=${target}
+target=android-7
+#target=${target}

@@ -6,8 +6,8 @@ package in.jugchennai.forge.android.utils;
  */
 public class TemplateSettings {
 
-    /** The name. */
-    private String name = null;
+    /** The activity name. */
+    private String activityName = null;
     
     /** The top level pacakge. */
     private String topLevelPacakge = null;
@@ -15,34 +15,41 @@ public class TemplateSettings {
     /** The import package. */
     private String importPackage = null;
     
+    /** The activity label key . */
+    private String activityLabelKey = null;
+    
+    /** The activity label value . */
+    private String activityLabelValue = null;
+    
     /**
      * Instantiates a new template settings.
      *
      * @param name of the template to be created
      * @param importPackage source package
      */
-    public TemplateSettings(String name, String importPackage) {
-        this.name = name;
+    public TemplateSettings(String activityName, String importPackage) {
+        this.activityName = activityName;
         this.importPackage = importPackage;
     }
 
-    /**
-     * Gets the name.
+
+	/**
+     * Gets the activity name.
      *
      * @return the name
      */
-    public String getName() {
-        return name;
-    }
+    public String getActivityName() {
+		return activityName;
+	}
 
     /**
-     * Sets the name.
+     * Sets the activity name.
      *
      * @param name the new name
      */
-    public void setName(String name) {
-        this.name = name;
-    }
+	public void setActivityName(String activityName) {
+		this.activityName = activityName;
+	}
 
     /**
      * Gets the top level pacakge.
@@ -79,4 +86,40 @@ public class TemplateSettings {
     public void setImportPackage(String importPackage) {
         this.importPackage = importPackage;
     }
+
+    /**
+     * Gets the activity label key.
+     *
+     * @return the activityLabelKey
+     */
+	public String getActivityLabelKey() {
+		return activityLabelKey;
+	}
+
+    /**
+     * Sets the activity label key.
+     *
+     * @param activity label key
+     */
+	public void setActivityLabelKey(String activityLabelKey) {
+		this.activityLabelKey = activityLabelKey;
+	}
+
+    /**
+     * Gets the activity label value.
+     *
+     * @return the activityLabelValue
+     */
+	public String getActivityLabelValue() {
+		return activityLabelValue;
+	}
+
+    /**
+     * Sets the activity label value.
+     *
+     * @param activity label value
+     */
+	public void setActivityLabelValue(String activityLabelValue) {
+		this.activityLabelValue = activityLabelValue;
+	}
 }
