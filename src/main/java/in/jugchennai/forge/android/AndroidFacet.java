@@ -17,6 +17,7 @@ package in.jugchennai.forge.android;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -36,6 +37,7 @@ import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.RequiresFacet;
+import org.apache.commons.collections.CollectionUtils;
 
 
 /**
@@ -49,6 +51,8 @@ import org.jboss.forge.shell.plugins.RequiresFacet;
 @Alias("org.android")
 @RequiresFacet({DependencyFacet.class})
 public class AndroidFacet extends BaseFacet {
+	private static final String PACKAGING_TYPE_APK = "apk";
+
 	public static final String SUCCESS_MSG_FMT = "***SUCCESS*** %s %s has been installed.";
 
     /** The shell. */
@@ -72,6 +76,7 @@ public class AndroidFacet extends BaseFacet {
 //        }
         installDependencies(getAndroidCoreDependency(), true);
         installplugin(androidBuildPlugin());
+        setPackaging(PACKAGING_TYPE_APK);
 		return true;
 	}
 
@@ -109,7 +114,19 @@ public class AndroidFacet extends BaseFacet {
         this.writer.println(ShellColor.GREEN, dependency.getArtifactId() + ":" + dependency.getGroupId() + ":" + dependency.getVersion() + " is added to the dependency.");
 
     }
-
+    
+    /**
+     * Method to set the packaging type into the project.
+     * 
+     * @param packagingType packagingType
+     */
+    private void setPackaging(final String packagingType) {
+    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
+    	Model pom = facet.getPOM();
+    	pom.setPackaging(packagingType);
+    	facet.setPOM(pom);
+    }
+    
     /**
      * Android core dependency.
      * 
@@ -132,8 +149,13 @@ public class AndroidFacet extends BaseFacet {
     		build = new Build();
     		pom.setBuild(build);
     	}
-    	pom.getBuild().addPlugin(plugin);
-    	facet.setPOM(pom);
+    	
+    	// If the plugin is not available in pom.xml, add the dependency
+    	List<Plugin> plugins = pom.getBuild().getPlugins();
+    	if (CollectionUtils.isNotEmpty(plugins) && !plugins.contains(plugin)) {
+        	pom.getBuild().addPlugin(plugin);
+        	facet.setPOM(pom);
+    	}
     }
     
     /**
