@@ -112,4 +112,38 @@ Trouble Shooting
 
 [Android Maven Could not find tool 'aapt'](http://stackoverflow.com/questions/16619143/android-maven-could-not-find-tool-aapt)
 
+Help
+====
+http://deepintojee.wordpress.com/2012/05/09/android-from-scratch-the-basics/
+http://deepintojee.wordpress.com/2012/05/27/android-from-scratch-part-2-use-android-maven-plugin/
+https://github.com/akquinet/android-archetypes
+http://maven-android-plugin-m2site.googlecode.com/svn/run-mojo.html
+http://www.vogella.com/articles/AndroidBuildMaven/article.html
+
+
+mvn3 clean install
+mvn3 android:deploy  - (Device id specification)
+
+<plugin>
+                <groupId>com.jayway.maven.plugins.android.generation2</groupId>
+                <artifactId>android-maven-plugin</artifactId>
+                <configuration>
+                    <run>
+                        <debug>true</debug>
+                    </run>
+                    <sdk>
+                        <platform>4</platform>
+                    </sdk>
+                    <emulator>
+                        <avd>16</avd>
+                    </emulator>
+                    <undeployBeforeDeploy>true</undeployBeforeDeploy>
+                </configuration>
+            </plugin>
+
+mvn clean install -Dandroid.device="emulator" -Dandroid.emulator.avd=default -f pom.xml
+
+http://developer.android.com/tools/devices/managing-avds-cmdline.html
+http://maven-android-plugin-m2site.googlecode.com/svn/plugin-info.html
+
 

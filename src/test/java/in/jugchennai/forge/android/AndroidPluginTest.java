@@ -30,6 +30,9 @@ import javax.inject.Inject;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.forge.project.Project;
 import org.jboss.forge.project.dependencies.DependencyResolver;
+import org.jboss.forge.project.facets.JavaSourceFacet;
+import org.jboss.forge.project.facets.MetadataFacet;
+import org.jboss.forge.resources.DirectoryResource;
 import org.jboss.forge.test.AbstractShellTest;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
@@ -45,8 +48,6 @@ public class AndroidPluginTest extends AbstractShellTest {
 
 	    private Project initializeJRebirthFacesProject() throws Exception {
 	        Project p = initializeJavaProject();
-
-	        
 	        getShell().execute("android setup");
 	        return p;
 	    }
@@ -56,7 +57,26 @@ public class AndroidPluginTest extends AbstractShellTest {
 
 	        initializeJRebirthFacesProject();
 	        final Project project = initializeJRebirthFacesProject();
-
+	        final MetadataFacet metadata = project.getFacet(MetadataFacet.class);
+	        String projectName = metadata.getProjectName();
+	        System.out.println("projectName > " + projectName);
+	        String topLevelPackage = metadata.getTopLevelPackage();
+	        System.out.println("topLevelPackage > " + topLevelPackage);
+	        
+	        final DirectoryResource sourceFolder = project.getFacet(JavaSourceFacet.class).getSourceFolder();
+	        
+//	        DirectoryResource directory = sourceFolder.getChildDirectory(Packages.toFileSyntax(topLevelPackage + type.getPackageName() + "."));
+	        
+//	        if (directory.isDirectory() == false) {
+//	            ShellMessages.info(out, messages.getMessage("package.doesnot.exist", packageType));
+//	            directory.mkdir();
+//	        }
+	        System.out.println("Executing .... ");
+	        try {
+	        	getShell().execute("mvn xxxxx");
+	        } catch (Exception e) {
+				e.printStackTrace();
+			}
 	        assertNotNull(resolver);
 
 	        assertNotNull(project.hasFacet(AndroidFacet.class));

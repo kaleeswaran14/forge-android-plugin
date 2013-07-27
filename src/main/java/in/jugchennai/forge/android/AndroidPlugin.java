@@ -21,6 +21,7 @@ import in.jugchennai.forge.android.utils.Utils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,11 @@ import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.codehaus.plexus.util.StringUtils;
+import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.jboss.forge.parser.xml.Node;
+import org.jboss.forge.parser.xml.XMLParser;
 import org.jboss.forge.project.Project;
 import org.jboss.forge.project.facets.DependencyFacet;
 import org.jboss.forge.project.facets.JavaSourceFacet;
@@ -37,7 +43,6 @@ import org.jboss.forge.project.facets.MetadataFacet;
 import org.jboss.forge.project.facets.events.InstallFacets;
 import org.jboss.forge.resources.DirectoryResource;
 import org.jboss.forge.resources.FileResource;
-import org.jboss.forge.resources.Resource;
 import org.jboss.forge.shell.ShellColor;
 import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
@@ -51,6 +56,8 @@ import org.jboss.forge.shell.plugins.Plugin;
 import org.jboss.forge.shell.plugins.RequiresFacet;
 import org.jboss.forge.shell.plugins.RequiresProject;
 import org.jboss.forge.shell.plugins.SetupCommand;
+import org.jboss.forge.shell.util.Packages;
+import org.jboss.forge.shell.Shell;
 
 import freemarker.template.TemplateException;
 
@@ -68,10 +75,14 @@ import freemarker.template.TemplateException;
 @RequiresProject
 public class AndroidPlugin implements Plugin  {
 	
-    /** The shell. */
+    /** The shell prompt. */
     @Inject
-    private ShellPrompt shell;
+    private ShellPrompt shellPrompt;
 
+    /** The shell. */
+	@Inject
+	Shell shell;
+	
     /** The project. */
     @Inject
     private Project project;
@@ -119,7 +130,8 @@ public class AndroidPlugin implements Plugin  {
 		iconResources.add(mdpiIconFile);
 		
 		InputStream stream = null;
-//		if (CollectionUtils.isNotEmpty(iconResources)) {
+		if (CollectionUtils.isNotEmpty(iconResources)) {
+			// TODO: need to try with util class
 //			for (FileResource<?> iconResource : iconResources) {
 //				if (!iconResource.exists()) {
 //					stream = AndroidPlugin.class.getResourceAsStream("/templates/icons.png");
@@ -127,7 +139,7 @@ public class AndroidPlugin implements Plugin  {
 //					out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "icons.png", "icon"));
 //				}
 //			}
-//		}
+		}
 		
 		// activity creation
         final MetadataFacet metadata = this.project.getFacet(MetadataFacet.class);
@@ -137,6 +149,7 @@ public class AndroidPlugin implements Plugin  {
 		settings.setActivityLabelKey("app_name");
 		settings.setActivityLabelValue(projectName);
 		
+		// without considering existing java file it is updating it
         final Map<String, TemplateSettings> context = new HashMap<String, TemplateSettings>();
         settings.setTopLevelPacakge(metadata.getTopLevelPackage());
         context.put("settings", settings);
@@ -201,22 +214,59 @@ public class AndroidPlugin implements Plugin  {
      */
     @Command(value = "activity-create", help = "Create a activity for the given name")
     public void createActivity(
-            final PipeOut out,
-            @Option(name = "name", shortName = "n", required = true, help = "Name of the activity to be created.")
-            final String name) {
-    }
-    
-    /**
-     * Creates the android project.
-     * 
-     * @param out the out
-     * @param name the project name
-     */
-    @Command(value = "project-create", help = "Create a android application with the given name")
-    public void createProject(
-            final PipeOut out,
-            @Option(name = "name", shortName = "n", required = true, help = "Name of the application to be created.")
-            final String name) {
+    		final PipeOut out, 
+    		@Option(name = "name", shortName = "n", required = true, help = "Name of the activity to be created.") 
+    		final String name,
+    		@Option(name = "isLaunchActivity", shortName = "i", help = "Is launch activity", defaultValue = "false", flagOnly = false)
+            final boolean isLaunchActivity) {
+//    	projectName > androidForgeTestApp
+//    	topLevelPackage > com.example.androidForgeTestApp
+    	
+        final MetadataFacet metadata = project.getFacet(MetadataFacet.class);
+        String projectName = metadata.getProjectName();
+        String topLevelPackage = metadata.getTopLevelPackage();
+        System.out.println("projectName > " + projectName);
+        System.out.println("topLevelPackage > " + topLevelPackage);
+        
+        
+        // get acitivity package name
+        String manifestPackage = Utils.getApplicationPackage(project, out);
+        System.out.println("manifestPackage > " + manifestPackage);
+        
+        // folder already exists
+        final DirectoryResource sourceFolder = project.getFacet(JavaSourceFacet.class).getSourceFolder();
+        String javaFileSyntax = Packages.toFileSyntax(manifestPackage + ".");
+		DirectoryResource packageDirectory = sourceFolder.getChildDirectory(javaFileSyntax);
+        if (!packageDirectory.exists()) {
+        	out.println("Package does not exist creating it " + packageDirectory);
+        	packageDirectory.mkdir();
+        }
+        
+        // creating activity file
+        FileResource<?> activityFile = (FileResource<?>)packageDirectory.getChild(name + ".java"); // name ends with activity by default
+        String activityName = "";
+        if (activityFile.exists()) {
+        	out.println("Activity already exists ");
+        	// do u want to overwrite it
+        } else {
+    		activityName = Utils.capitalize(name) + "Activity";
+			TemplateSettings settings = new TemplateSettings(activityName, manifestPackage);
+    		
+    		// without considering existing java file it is updating it
+            final Map<String, TemplateSettings> context = new HashMap<String, TemplateSettings>();
+            settings.setTopLevelPacakge(manifestPackage);
+            context.put("settings", settings);
+            try {
+				Utils.createJavaFileUsingTemplate(this.project, "TemplateActivity.ftl", context);
+			} catch (Exception e) {
+				out.println(ShellColor.RED, "Not able to create the activity");
+				return;
+			}
+            out.println(name + "Activity created");
+        }
+        
+        // entry on manifest file
+        Utils.createActivityEntry(project, out, activityName, isLaunchActivity);
     }
     
     /**
@@ -230,5 +280,282 @@ public class AndroidPlugin implements Plugin  {
             final PipeOut out,
             @Option(name = "number", shortName = "n", required = true, help = "Emulator number.")
             final String number) {
+    	
+    }
+    // min and max verison and build environment versions(2 places)
+    
+    /**
+     * Build the application.
+     * 
+     * @param out the out
+     * @param sdk SDK version to build
+     */
+    @Command(value = "build", help = "Build the application")
+    public void build(
+    		final PipeOut out, 
+    		@Option(name = "sdk", shortName = "v", required = false, help = "SDK version to build.") final String sdk) {
+    	try {
+//    		shell.execute("mvn clean compile android:generate-sources android:dex android:apk");
+    		String cmd = "mvn clean install -X";
+    		System.out.println("cmd > " + cmd);
+			shell.execute(cmd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    
+    /**
+     * Deploy the application.
+     * mvn clean install -Dandroid.device="emulator" -Dandroid.emulator.avd=default -f pom.xml
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "deploy", help = "Deploy the application")
+    public void deploy(
+    		final PipeOut out, 
+    		@Option(name = "device", shortName = "d", required = false, help = "Android device type.") final String device) {
+    	try {
+    		String cmd = "mvn android:deploy -X";
+    		System.out.println("cmd > " + cmd);
+			shell.execute(cmd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Undeploy the application.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "undeploy", help = "undeploy the application")
+    public void undeploy(
+    		final PipeOut out, 
+    		@Option(name = "device", shortName = "d", required = false, help = "Android device type.") final String device) {
+    	try {
+    		String cmd = "mvn android:undeploy -X";
+    		System.out.println("cmd > " + cmd);
+			shell.execute(cmd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Undeploy the application.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "run", help = "run the application")
+    public void run(
+    		final PipeOut out, 
+    		@Option(name = "device", shortName = "d", required = false, help = "Android device type.") final String device) {
+    	try {
+    		String cmd = "mvn android:run -X";
+    		System.out.println("cmd > " + cmd);
+			shell.execute(cmd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * list android devices.
+     * 
+     * @param out the out
+     */
+    @Command(value = "devices", help = "list android devices")
+    public void listDevices(
+    		final PipeOut out, 
+    		@Option(name = "device", shortName = "d", required = false, help = "Android device type.") final String device) {
+    	try {
+    		String cmd = "mvn android:devices";
+    		System.out.println("cmd > " + cmd);
+			shell.execute(cmd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * help.
+     * 
+     * @param out the out
+     */
+    @Command(value = "help", help = "help")
+    public void help(final PipeOut out) {
+    	try {
+    		String cmd = "mvn android:help";
+    		System.out.println("cmd > " + cmd);
+			shell.execute(cmd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * list sdks.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "sdks", help = "list sdks on this machine")
+    public void sdks(final PipeOut out) {
+    	try {
+    		String cmd = "android list targets";
+    		System.out.println("cmd > " + cmd);
+			shell.execute(cmd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Create AVD.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "avd-create", help = "create avd")
+    public void createAvd(
+    		final PipeOut out, 
+    		@Option(name = "name", shortName = "n", required = true, help = "name of the device") final String name,
+    		@Option(name = "targetID", shortName = "t", required = true, help = "targetID") final String targetID,
+    		@Option(name = "options", shortName = "o", required = false, help = "extra options can be specified like [-<option> <value>] ... ") final String options) {
+    	try {
+    		System.out.println("android create ");
+    		String command = "android create avd -n "+ name +" -t "+ targetID +" ";
+    		if (StringUtils.isNotEmpty(options)) {
+    			command = command + options;
+    		}
+    		System.out.println("command > " + command);
+//			shell.execute(command);
+    		Utils.executeInShell(command, null);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Move AVD.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "avd-move", help = "move avd")
+    public void moveAvd(
+    		final PipeOut out, 
+    		@Option(name = "name", shortName = "n", required = true, help = "name of the device") final String name,
+    		@Option(name = "options", shortName = "o", required = false, help = "extra options can be specified like [-<option> <value>] ... ") final String options) {
+    	try {
+    		String command = "android move avd -n "+ name +" -t ";
+    		if (StringUtils.isNotEmpty(options)) {
+    			command = command + options;
+    		}
+    		System.out.println("command > " + command);
+//			shell.execute(command);
+    		Utils.executeInShell(command, null);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Update AVD.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "avd-update", help = "update avd")
+    public void updateAvd(final PipeOut out) {
+    	try {
+    		String command = "avd-update";
+    		System.out.println("cmd " + command);
+//			shell.execute(cmd);
+    		Utils.executeInShell(command, null);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Delete AVD.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "avd-delete", help = "delete avd")
+    public void deleteAvd(
+    		final PipeOut out, 
+    		@Option(name = "name", shortName = "n", required = true, help = "name of the device") final String name) {
+    	try {
+    		String command = "android delete avd -n "+ name +" ";
+    		System.out.println("cmd " + command);
+//			shell.execute(cmd);
+    		Utils.executeInShell(command, null);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Start the emulator.
+     * 
+     * @param out the out
+     * @param name name of the emulator
+     */
+    @Command(value = "emulator-start", help = "start emulator")
+    public void startEmulator(
+    		final PipeOut out, 
+    		@Option(name = "name", shortName = "n", required = true, help = "name of the emulator") final String name) {
+    	try {
+    		String command = "mvn android:emulator-start";
+    		System.out.println("cmd " + command);
+			shell.execute(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Stop the emulator.
+     * 
+     * @param out the out
+     * @param name name of the emulator
+     */
+    @Command(value = "emulator-stop", help = "stop emulator")
+    public void stopEmulator(
+    		final PipeOut out, 
+    		@Option(name = "name", shortName = "n", required = true, help = "name of the emulator") final String name) {
+    	try {
+    		String command = "mvn android:emulator-stop";
+    		System.out.println("cmd " + command);
+			shell.execute(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    /**
+     * Stop all the emulator.
+     * 
+     * @param out the out
+     * @param name name of the emulator
+     */
+    @Command(value = "emulator-stop-all", help = "stop all emulator")
+    public void stopAllEmulator(
+    		final PipeOut out, 
+    		@Option(name = "name", shortName = "n", required = true, help = "name of the emulator") final String name) {
+    	try {
+    		String command = "mvn android:emulator-stop-all";
+    		System.out.println("cmd " + command);
+			shell.execute(command);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
     }
 }
