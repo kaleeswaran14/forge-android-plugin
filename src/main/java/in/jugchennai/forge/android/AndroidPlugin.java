@@ -131,14 +131,16 @@ public class AndroidPlugin implements Plugin  {
 		
 		InputStream stream = null;
 		if (CollectionUtils.isNotEmpty(iconResources)) {
-			// TODO: need to try with util class
-//			for (FileResource<?> iconResource : iconResources) {
-//				if (!iconResource.exists()) {
-//					stream = AndroidPlugin.class.getResourceAsStream("/templates/icons.png");
-//					iconResource.setContents(stream);
-//					out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "icons.png", "icon"));
-//				}
-//			}
+			/*for (FileResource<?> iconResource : iconResources) {
+				if (!iconResource.exists()) {
+					stream = AndroidPlugin.class.getResourceAsStream("/templates/icons.png");
+					iconResource.setContents(stream);
+//					File iconFolder = iconResource.getUnderlyingResourceObject().getAbsoluteFile();
+//					System.out.println("iconFolder > " + iconFolder);
+//					Utils.copyImage(stream, iconFolder);
+					out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "icons.png", "icon"));
+				}
+			}*/
 		}
 		
 		// activity creation

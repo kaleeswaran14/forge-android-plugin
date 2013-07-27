@@ -17,11 +17,12 @@ package in.jugchennai.forge.android;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -32,13 +33,12 @@ import org.jboss.forge.project.dependencies.Dependency;
 import org.jboss.forge.project.dependencies.DependencyBuilder;
 import org.jboss.forge.project.facets.BaseFacet;
 import org.jboss.forge.project.facets.DependencyFacet;
+import org.jboss.forge.shell.Shell;
 import org.jboss.forge.shell.ShellColor;
 import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.RequiresFacet;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 
 
 /**
@@ -56,9 +56,13 @@ public class AndroidFacet extends BaseFacet {
 
 	public static final String SUCCESS_MSG_FMT = "***SUCCESS*** %s %s has been installed.";
 
-    /** The shell. */
+    /** The shell prompt. */
     @Inject
-    private ShellPrompt shell;
+    private ShellPrompt shellPrompt;
+
+    /** The shell. */
+	@Inject
+	Shell shell;
 
     /** The dependency facet. */
     private DependencyFacet dependencyFacet;
@@ -80,6 +84,7 @@ public class AndroidFacet extends BaseFacet {
         setPackaging(PACKAGING_TYPE_APK);
         //android list targets
         //http://developer.android.com/tools/devices/managing-avds-cmdline.html
+        String platformVersion = this.shellPrompt.prompt("What platform version do you want to use ? e.g (3.0, 4.0, 4.0.3) ");
         setProperty("platform.version", "4.0.3"); // platform version need to get from user
 		return true;
 	}
@@ -110,7 +115,7 @@ public class AndroidFacet extends BaseFacet {
 
         final List<Dependency> versions = this.dependencyFacet.resolveAvailableVersions(dependency);
         if (askVersion) {
-            final Dependency dep = this.shell.promptChoiceTyped("What version do you want to install ?", versions);
+            final Dependency dep = this.shellPrompt.promptChoiceTyped("What version do you want to install ?", versions);
             dependency.setVersion(dep.getVersion());
         }
         this.dependencyFacet.addDirectDependency(dependency);
@@ -125,7 +130,6 @@ public class AndroidFacet extends BaseFacet {
      * @param packagingType packagingType
      */
     private void setPackaging(final String packagingType) {
-    	System.out.println("android packaging is set .... ");
     	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
     	Model pom = facet.getPOM();
     	pom.setPackaging(packagingType);
