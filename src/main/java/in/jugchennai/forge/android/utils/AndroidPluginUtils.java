@@ -32,7 +32,7 @@ import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 
-public final class Utils {
+public final class AndroidPluginUtils {
 	
     /** The Constant TEMPLATE_KEY_PACKAGE. */
     public static final String TEMPLATE_KEY_PACKAGE = "package";
@@ -54,50 +54,18 @@ public final class Utils {
 
     private static Configuration cfg = new Configuration();
     static {
-        cfg.setClassForTemplateLoading(Utils.class, "../../../../../templates");
+        cfg.setClassForTemplateLoading(AndroidPluginUtils.class, "../../../../../templates");
         cfg.setObjectWrapper(new DefaultObjectWrapper());
-    }
-    
-    /**
-     * The Enum Android CreationType.
-     */
-    public enum CreationType {
-
-        /** The mv. */
-        A("ui"), /** The activity. */
-        AV("ui.v"); /** The activity and view. */
-
-        String packageName;
-
-        CreationType(String thePackageName) {
-            packageName = thePackageName;
-        }
-
-        String getPackageName() {
-            return packageName;
-        }
     }
     
     /**
      * Private constructor.
      */
-    private Utils() {
+    private AndroidPluginUtils() {
     	
     }
     
-	public static void createFileUsingTemplate(final Project project, final String templateFileName, final File fileObj, final Map<String, TemplateSettings> context) throws IOException, TemplateException {
-
-		Template template = null;
-		template = cfg.getTemplate(templateFileName);
-
-		FileWriter fileWriter = new FileWriter(fileObj);
-		template.process(context, fileWriter);
-		fileWriter.flush();
-
-	}
-	
 	public static void createResourceFileUsingTemplate(final Project project, final String templateFileName, final File fileObj, final Map<String, TemplateSettings> context) throws IOException, TemplateException {
-
 		Template template = null;
 		template = cfg.getTemplate(templateFileName);
 
