@@ -62,6 +62,25 @@ public class AndroidFacet extends BaseFacet {
     @Inject
     private ShellPrintWriter writer;
     
+    
+	/*@Override
+	public boolean install() {
+        this.dependencyFacet = this.project.getFacet(DependencyFacet.class);
+        String androidHome = System.getenv("ANDROID_HOME");
+        if (StringUtils.isEmpty(androidHome)) {
+        	this.writer.println(ShellColor.RED, "Android Home is not set in environment variable ");
+        	return false;
+        }
+        installDependencies(getAndroidCoreDependency(), false);
+        installplugin(androidBuildPlugin());
+        setPackaging(PACKAGING_TYPE_APK);
+        //android list targets
+        //http://developer.android.com/tools/devices/managing-avds-cmdline.html
+        String platformVersion = this.shellPrompt.prompt("What platform version do you want to use ? e.g (3.0, 4.0, 4.0.3) ");
+        setProperty("platform.version", "4.0.3"); // platform version need to get from user
+		return true;
+	}
+	*/
 	@Override
 	public boolean install() {
         this.dependencyFacet = this.project.getFacet(DependencyFacet.class);
@@ -110,6 +129,33 @@ public class AndroidFacet extends BaseFacet {
 
     }
 
+    
+    /**
+     * Method to set the packaging type into the project.
+     * 
+     * @param packagingType packagingType
+     *//*
+    private void setPackaging(final String packagingType) {
+    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
+    	Model pom = facet.getPOM();
+    	pom.setPackaging(packagingType);
+    	facet.setPOM(pom);
+    }
+    
+    *//**
+     * Method to set the property values.
+     * 
+     * @param key key
+     * @param value value
+     *//*
+    private void setProperty(final String key, final String value) {
+    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
+    	Model pom = facet.getPOM();
+    	pom.addProperty(key, value);
+    	facet.setPOM(pom);
+    }
+    
+    */
     /**
      * Android core dependency.
      * 
