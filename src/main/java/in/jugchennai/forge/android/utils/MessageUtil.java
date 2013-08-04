@@ -5,10 +5,10 @@ import java.util.ResourceBundle;
 /**
  * The Class Messages.
  */
-public final class MessageDriod {
+public final class MessageUtil {
 
     /** The Constant INSTANCE. */
-    public static final MessageDriod INSTANCE = new MessageDriod();
+    public static final MessageUtil INSTANCE = new MessageUtil();
 
     /** The bundle. */
     private final ResourceBundle bundle;
@@ -16,7 +16,7 @@ public final class MessageDriod {
     /**
      * Instantiates a new messages.
      */
-    private MessageDriod() {
+    private MessageUtil() {
         bundle = ResourceBundle.getBundle("ResourceBundle");
     }
 

@@ -49,7 +49,7 @@ import org.junit.Test;
 public class AndroidPluginTest extends AbstractShellTest {
 	  @Inject
 	    private DependencyResolver resolver;
-	  	String [][] value_cmds = {{"string_add","color_add","dimens_add"},{"android string-add --name test --value testvalue",
+	  	String [][] valuecommands = {{"string_add","color_add","dimens_add"},{"android string-add --name test --value testvalue",
 	  		"android color-add --name test --hexvalue #ccfff","android dimens-add --name test --pixel 50dp"}};
 	  	
 
@@ -65,7 +65,7 @@ public class AndroidPluginTest extends AbstractShellTest {
 	    }
 
 	    @Test
-	    public void Setup() throws Exception {
+	    public void setupTest() throws Exception {
 	    	initializeAndriodFacesProject();
 	        final Project project = initializeAndriodFacesProject();
 	        assertNotNull(resolver);
@@ -87,16 +87,17 @@ public class AndroidPluginTest extends AbstractShellTest {
 	        assertTrue(valuesDirectory.getChild("dimens.xml").exists());
 	    }
 	    
+	    	    
 	    /*
-	     * value_parser is used to test the add commands for string,color and dimens.
-	     * If the name "test" exist the test case is passing
-	     */
-	    public void values_TestBot (String _uri,String _cmd) throws Exception{
+	     * Check String  values in xml files is generated
+	     * */
+	    @Test
+	    public void stringCommandTest() throws Exception {
 	    	final Project project = initializeAndriodFacesProject();
-	    	FileResource<?> tempFile = project.getProjectRoot().getChildOfType(FileResource.class, _uri);
-	    	getShell().execute(_cmd);
-	        if(tempFile.exists()) {
-		        Node node = XMLParser.parse(tempFile.getResourceInputStream());
+	    	FileResource<?> stringFile = project.getProjectRoot().getChildOfType(FileResource.class, "res/values/strings.xml");
+	    	getShell().execute("android string-add --name test --value testvalue");
+	        if(stringFile.exists()) {
+		        Node node = XMLParser.parse(stringFile.getResourceInputStream());
 	    		Node noderes = node.getOrCreate("resources");
 	    			for(Node tempres : noderes.getChildren()){
 	    				if(tempres.getAttribute("name").equals("test"))
@@ -108,13 +109,44 @@ public class AndroidPluginTest extends AbstractShellTest {
 	    }
 	    
 	    /*
-	     * value_cmd test all the commands that related to value resources
-	     */
+	     * Check String  values in xml files is generated
+	     * */
 	    @Test
-	    public void values_cmd() throws Exception {
-	    	values_TestBot ("res/values/strings.xml","android string-add --name test --value testvalue");
-	    	values_TestBot ("res/values/color.xml","android color-add --name test2 --hexvalue #ccfff");
-	    	values_TestBot ("res/values/color.xml","android dimens-add --name test --pixel 50dp");
+	    public void colorCommandTest() throws Exception {
+	    	final Project project = initializeAndriodFacesProject();
+	    	FileResource<?> colorFile = project.getProjectRoot().getChildOfType(FileResource.class, "res/values/color.xml");
+	    	getShell().execute("android color-add --name test2 --hexvalue #ccfff");
+	        if(colorFile.exists()) {
+		        Node node = XMLParser.parse(colorFile.getResourceInputStream());
+	    		Node noderes = node.getOrCreate("resources");
+	    			for(Node tempres : noderes.getChildren()){
+	    				if(tempres.getAttribute("name").equals("test"))
+	    				{
+	    					Assert.assertEquals(tempres.getAttribute("name"), "test");
+	    				}
+	    		}
+		    }
+	    }
+	    
+	    /*
+	     * Check String  values in xml files is generated
+	     * */
+	    @Test
+	    public void dimensCommandTest() throws Exception {
+	    	final Project project = initializeAndriodFacesProject();
+	    	FileResource<?> dimensFile = project.getProjectRoot().getChildOfType(FileResource.class, "res/values/dimens.xml");
+	    	getShell().execute("android dimens-add --name test --pixel 50dp");
+	        if(dimensFile.exists()) {
+		        Node node = XMLParser.parse(dimensFile.getResourceInputStream());
+	    		Node noderes = node.getOrCreate("resources");
+	    			for(Node tempres : noderes.getChildren()){
+	    				if(tempres.getAttribute("name").equals("test"))
+	    				{
+	    					Assert.assertEquals(tempres.getAttribute("name"), "test");
+	    				}
+	    		}
+		    }
 	    }
 	    
 }
+
