@@ -652,7 +652,7 @@ FileResource<?> stringFile = project.getProjectRoot().getChildOfType(FileResourc
             final String dmsvalue) {
     
 		try {
-			valuesCommandHelper(out, "res/values/color.xml",dmsname,dmsvalue,"dimen");
+			valuesCommandHelper(out, "res/values/dimens.xml",dmsname,dmsvalue,"dimen");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}	

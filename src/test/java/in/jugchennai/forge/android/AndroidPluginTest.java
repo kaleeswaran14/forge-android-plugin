@@ -89,7 +89,7 @@ public class AndroidPluginTest extends AbstractShellTest {
 	    
 	    	    
 	    /*
-	     * Check String  values in xml files is generated
+	     * Check String name in xml files that created by string-add
 	     * */
 	    @Test
 	    public void stringCommandTest() throws Exception {
@@ -109,7 +109,7 @@ public class AndroidPluginTest extends AbstractShellTest {
 	    }
 	    
 	    /*
-	     * Check String  values in xml files is generated
+	     * Check Color name in xml files that created by color-add
 	     * */
 	    @Test
 	    public void colorCommandTest() throws Exception {
@@ -129,7 +129,7 @@ public class AndroidPluginTest extends AbstractShellTest {
 	    }
 	    
 	    /*
-	     * Check String  values in xml files is generated
+	     * Check Dimens name in xml files that created by dimens-add
 	     * */
 	    @Test
 	    public void dimensCommandTest() throws Exception {
