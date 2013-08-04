@@ -21,8 +21,6 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -33,7 +31,6 @@ import org.jboss.forge.project.dependencies.Dependency;
 import org.jboss.forge.project.dependencies.DependencyBuilder;
 import org.jboss.forge.project.facets.BaseFacet;
 import org.jboss.forge.project.facets.DependencyFacet;
-import org.jboss.forge.shell.Shell;
 import org.jboss.forge.shell.ShellColor;
 import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
@@ -52,17 +49,11 @@ import org.jboss.forge.shell.plugins.RequiresFacet;
 @Alias("org.android")
 @RequiresFacet({DependencyFacet.class})
 public class AndroidFacet extends BaseFacet {
-	private static final String PACKAGING_TYPE_APK = "apk";
-
 	public static final String SUCCESS_MSG_FMT = "***SUCCESS*** %s %s has been installed.";
 
-    /** The shell prompt. */
-    @Inject
-    private ShellPrompt shellPrompt;
-
     /** The shell. */
-	@Inject
-	Shell shell;
+    @Inject
+    private ShellPrompt shell;
 
     /** The dependency facet. */
     private DependencyFacet dependencyFacet;
@@ -74,18 +65,13 @@ public class AndroidFacet extends BaseFacet {
 	@Override
 	public boolean install() {
         this.dependencyFacet = this.project.getFacet(DependencyFacet.class);
-        String androidHome = System.getenv("ANDROID_HOME");
-        if (StringUtils.isEmpty(androidHome)) {
-        	this.writer.println(ShellColor.RED, "Android Home is not set in environment variable ");
-        	return false;
-        }
-        installDependencies(getAndroidCoreDependency(), false);
+//        String androidHome = System.getenv("ANDROID_HOME");
+//        if (StringUtils.isEmpty(androidHome)) {
+//        	this.writer.println(ShellColor.RED, "Android Home is not set in environment variable ");
+//        	return false;
+//        }
+        installDependencies(getAndroidCoreDependency(), true);
         installplugin(androidBuildPlugin());
-        setPackaging(PACKAGING_TYPE_APK);
-        //android list targets
-        //http://developer.android.com/tools/devices/managing-avds-cmdline.html
-        String platformVersion = this.shellPrompt.prompt("What platform version do you want to use ? e.g (3.0, 4.0, 4.0.3) ");
-        setProperty("platform.version", "4.0.3"); // platform version need to get from user
 		return true;
 	}
 
@@ -115,7 +101,7 @@ public class AndroidFacet extends BaseFacet {
 
         final List<Dependency> versions = this.dependencyFacet.resolveAvailableVersions(dependency);
         if (askVersion) {
-            final Dependency dep = this.shellPrompt.promptChoiceTyped("What version do you want to install ?", versions);
+            final Dependency dep = this.shell.promptChoiceTyped("What version do you want to install ?", versions);
             dependency.setVersion(dep.getVersion());
         }
         this.dependencyFacet.addDirectDependency(dependency);
@@ -123,39 +109,14 @@ public class AndroidFacet extends BaseFacet {
         this.writer.println(ShellColor.GREEN, dependency.getArtifactId() + ":" + dependency.getGroupId() + ":" + dependency.getVersion() + " is added to the dependency.");
 
     }
-    
-    /**
-     * Method to set the packaging type into the project.
-     * 
-     * @param packagingType packagingType
-     */
-    private void setPackaging(final String packagingType) {
-    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
-    	Model pom = facet.getPOM();
-    	pom.setPackaging(packagingType);
-    	facet.setPOM(pom);
-    }
-    
-    /**
-     * Method to set the property values.
-     * 
-     * @param key key
-     * @param value value
-     */
-    private void setProperty(final String key, final String value) {
-    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
-    	Model pom = facet.getPOM();
-    	pom.addProperty(key, value);
-    	facet.setPOM(pom);
-    }
-    
+
     /**
      * Android core dependency.
      * 
      * @return the dependency builder
      */
     private static DependencyBuilder getAndroidCoreDependency() {
-        return DependencyBuilder.create().setGroupId("com.google.android").setArtifactId("android").setVersion("4.0.3").setScopeType("provided");
+        return DependencyBuilder.create().setGroupId("com.google.android").setArtifactId("android").setVersion("4.1.1.4").setScopeType("provided");
     }
     
     /**
@@ -171,13 +132,8 @@ public class AndroidFacet extends BaseFacet {
     		build = new Build();
     		pom.setBuild(build);
     	}
-    	
-    	// If the plugin is not available in pom.xml, add the dependency
-    	List<Plugin> plugins = pom.getBuild().getPlugins();
-    	if (CollectionUtils.isNotEmpty(plugins) && !plugins.contains(plugin)) {
-        	pom.getBuild().addPlugin(plugin);
-        	facet.setPOM(pom);
-    	}
+    	pom.getBuild().addPlugin(plugin);
+    	facet.setPOM(pom);
     }
     
     /**
@@ -199,9 +155,9 @@ public class AndroidFacet extends BaseFacet {
     private Plugin androidBuildPlugin() {
     	Plugin mavenAndroidPlugin = new Plugin();
     	mavenAndroidPlugin.setGroupId("com.jayway.maven.plugins.android.generation2");
-    	mavenAndroidPlugin.setArtifactId("android-maven-plugin");
-    	mavenAndroidPlugin.setConfiguration(pluginConfiguration("4.0.3"));
-    	mavenAndroidPlugin.setVersion("3.6.0");
+    	mavenAndroidPlugin.setArtifactId("maven-android-plugin");
+    	mavenAndroidPlugin.setConfiguration(pluginConfiguration("7"));
+    	mavenAndroidPlugin.setVersion("2.8.4");
     	mavenAndroidPlugin.setExtensions(true);
 		return mavenAndroidPlugin;
     }
