@@ -15,13 +15,14 @@
 */
 package in.jugchennai.forge.android;
 
+import freemarker.template.TemplateException;
+import in.jugchennai.forge.android.utils.AndroidPluginUtils;
+import in.jugchennai.forge.android.utils.MessageUtil;
 import in.jugchennai.forge.android.utils.TemplateSettings;
-import in.jugchennai.forge.android.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,10 +31,6 @@ import java.util.Map;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.codehaus.plexus.util.StringUtils;
-import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.jboss.forge.parser.xml.Node;
 import org.jboss.forge.parser.xml.XMLParser;
 import org.jboss.forge.project.Project;
@@ -44,6 +41,7 @@ import org.jboss.forge.project.facets.events.InstallFacets;
 import org.jboss.forge.resources.DirectoryResource;
 import org.jboss.forge.resources.FileResource;
 import org.jboss.forge.shell.ShellColor;
+import org.jboss.forge.shell.ShellMessages;
 import org.jboss.forge.shell.ShellPrintWriter;
 import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
@@ -57,9 +55,6 @@ import org.jboss.forge.shell.plugins.RequiresFacet;
 import org.jboss.forge.shell.plugins.RequiresProject;
 import org.jboss.forge.shell.plugins.SetupCommand;
 import org.jboss.forge.shell.util.Packages;
-import org.jboss.forge.shell.Shell;
-
-import freemarker.template.TemplateException;
 
 /**
  * 
@@ -71,18 +66,14 @@ import freemarker.template.TemplateException;
 
 @Alias("android")
 @Help("A Forge plugin to enable and work on Android development.")
-@RequiresFacet({DependencyFacet.class, JavaSourceFacet.class})
+@RequiresFacet({DependencyFacet.class, AndroidFacet.class})
 @RequiresProject
 public class AndroidPlugin implements Plugin  {
 	
-    /** The shell prompt. */
-    @Inject
-    private ShellPrompt shellPrompt;
-
     /** The shell. */
-	@Inject
-	Shell shell;
-	
+    @Inject
+    private ShellPrompt shell;
+
     /** The project. */
     @Inject
     private Project project;
@@ -94,6 +85,9 @@ public class AndroidPlugin implements Plugin  {
     /** The writer. */
     @Inject
     private ShellPrintWriter writer;
+    
+    /** The String resource bundle. */
+    public static MessageUtil messages = MessageUtil.INSTANCE;
 	
     /**
      * The setup command for Android. This adds dependency to the current project
@@ -130,51 +124,53 @@ public class AndroidPlugin implements Plugin  {
 		iconResources.add(mdpiIconFile);
 		
 		InputStream stream = null;
-		if (CollectionUtils.isNotEmpty(iconResources)) {
-			/*for (FileResource<?> iconResource : iconResources) {
-				if (!iconResource.exists()) {
-					stream = AndroidPlugin.class.getResourceAsStream("/templates/icons.png");
-					iconResource.setContents(stream);
-//					File iconFolder = iconResource.getUnderlyingResourceObject().getAbsoluteFile();
-//					System.out.println("iconFolder > " + iconFolder);
-//					Utils.copyImage(stream, iconFolder);
-					out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "icons.png", "icon"));
-				}
-			}*/
-		}
+//		if (CollectionUtils.isNotEmpty(iconResources)) {
+//			for (FileResource<?> iconResource : iconResources) {
+//				if (!iconResource.exists()) {
+//					stream = AndroidPlugin.class.getResourceAsStream("/templates/icons.png");
+//					iconResource.setContents(stream);
+//					out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "icons.png", "icon"));
+//				}
+//			}
+//		}
 		
 		// activity creation
         final MetadataFacet metadata = this.project.getFacet(MetadataFacet.class);
         String projectName = metadata.getProjectName();
-		TemplateSettings settings = new TemplateSettings(Utils.capitalize(projectName) + "Activity", metadata.getTopLevelPackage());
+		TemplateSettings settings = new TemplateSettings(AndroidPluginUtils.capitalize(projectName) + "Activity", metadata.getTopLevelPackage());
 		// app name value which will be inserted in manifest and strings.xml
 		settings.setActivityLabelKey("app_name");
 		settings.setActivityLabelValue(projectName);
 		
-		// without considering existing java file it is updating it
         final Map<String, TemplateSettings> context = new HashMap<String, TemplateSettings>();
         settings.setTopLevelPacakge(metadata.getTopLevelPackage());
         context.put("settings", settings);
-        Utils.createJavaFileUsingTemplate(this.project, "TemplateActivity.ftl", context);
+        AndroidPluginUtils.createJavaFileUsingTemplate(this.project, "TemplateActivity.ftl", context);
         out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, projectName, "class"));
         
 		// manifest and default.properties file with activity name
 		FileResource<?> manifestFile = (FileResource<?>) projectRoot.getChild("AndroidManifest.xml");
 		if (!manifestFile.exists()) {
 	        File jnlpTemplate = new File(projectRoot.getUnderlyingResourceObject().getPath() + System.getProperty("file.separator") + "AndroidManifest.xml");
-			Utils.createFileUsingTemplate(project, "TemplateManifest.ftl", jnlpTemplate, context);
+	        AndroidPluginUtils.createResourceFileUsingTemplate(project, "TemplateManifest.ftl", jnlpTemplate, context);
 			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "AndroidManifest.xml", "file"));
 		}
 		
-		FileResource<?> valuesStringsFile = (FileResource<?>) valuesDirectory.getChild("strings.xml");
-		if (!valuesStringsFile.exists()) {
-			File stringsFileObj = new File(valuesDirectory.getUnderlyingResourceObject().getPath() + System.getProperty("file.separator") + "strings.xml");
-			Utils.createResourceFileUsingTemplate(project, "TemplateStrings.ftl", stringsFileObj, context);
-			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "strings.xml", "file"));
+		//res Files creation		
+		fileCreatHelper (out,this.project,"strings.xml" ,"TemplateStrings.ftl",context,"file");
+		fileCreatHelper (out,this.project,"color.xml" ,"TemplateColors.ftl",context,"file");
+		fileCreatHelper (out,this.project,"dimens.xml" ,"TemplateDimens.ftl",context,"file");
+		fileCreatHelper (out,this.project,"main.xml" ,"/templates/TemplateLayoutMain.ftl",context,"stream");
+		
+		FileResource<?> defaultPropFile = (FileResource<?>) projectRoot.getChild("default.properties");
+		if (!defaultPropFile.exists()) {
+			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateProperties.ftl");
+			defaultPropFile.setContents(stream);
+			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "default.properties", "file"));
 		}
 		
 		// create files alone
-		FileResource<?> defaultPropFile = (FileResource<?>) projectRoot.getChild("default.properties");
+		/*FileResource<?> defaultPropFile = (FileResource<?>) projectRoot.getChild("default.properties");
 		if (!defaultPropFile.exists()) {
 			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateProperties.ftl");
 			defaultPropFile.setContents(stream);
@@ -186,14 +182,15 @@ public class AndroidPlugin implements Plugin  {
 			stream = AndroidPlugin.class.getResourceAsStream("/templates/TemplateLayoutMain.ftl");
 			layoutMainFile.setContents(stream);
 			out.println(ShellColor.YELLOW, String.format(AndroidFacet.SUCCESS_MSG_FMT, "main.xml", "file"));
-		}
+		}*/
         
 		if (this.project.hasFacet(AndroidFacet.class)) {
 		    this.writer.println(ShellColor.GREEN, "Android is configured.");
 		}
 	}
 	
-    /**
+
+	/**
      * If android command is not executed with any argument this method will be called.
      * 
      * @param out the out
@@ -208,7 +205,7 @@ public class AndroidPlugin implements Plugin  {
 	}
 	
 	
-    /**
+	/**
      * Creates the activity.
      * 
      * @param out the out
@@ -232,7 +229,7 @@ public class AndroidPlugin implements Plugin  {
         
         
         // get acitivity package name
-        String manifestPackage = Utils.getApplicationPackage(project, out);
+        String manifestPackage = AndroidPluginUtils.getApplicationPackage(project, out);
         System.out.println("manifestPackage > " + manifestPackage);
         
         // folder already exists
@@ -245,21 +242,20 @@ public class AndroidPlugin implements Plugin  {
         }
         
         // creating activity file
-        FileResource<?> activityFile = (FileResource<?>)packageDirectory.getChild(name + ".java"); // name ends with activity by default
-        String activityName = "";
+        String activityName = AndroidPluginUtils.capitalize(name) + "Activity";
+        FileResource<?> activityFile = (FileResource<?>)packageDirectory.getChild(activityName + ".java"); // name ends with activity by default
         if (activityFile.exists()) {
         	out.println("Activity already exists ");
+//        	boolean doOverwrite = shell.promptBoolean("File already exists ");
         	// do u want to overwrite it
         } else {
-    		activityName = Utils.capitalize(name) + "Activity";
 			TemplateSettings settings = new TemplateSettings(activityName, manifestPackage);
-    		
     		// without considering existing java file it is updating it
             final Map<String, TemplateSettings> context = new HashMap<String, TemplateSettings>();
             settings.setTopLevelPacakge(manifestPackage);
             context.put("settings", settings);
             try {
-				Utils.createJavaFileUsingTemplate(this.project, "TemplateActivity.ftl", context);
+				AndroidPluginUtils.createJavaFileUsingTemplate(this.project, "TemplateActivity.ftl", context);
 			} catch (Exception e) {
 				out.println(ShellColor.RED, "Not able to create the activity");
 				return;
@@ -268,7 +264,20 @@ public class AndroidPlugin implements Plugin  {
         }
         
         // entry on manifest file
-        Utils.createActivityEntry(project, out, activityName, isLaunchActivity);
+        AndroidPluginUtils.createActivityEntry(project, out, activityName, isLaunchActivity);
+    }
+    
+    /**
+     * Creates the android project.
+     * 
+     * @param out the out
+     * @param name the project name
+     */
+    @Command(value = "project-create", help = "Create a android application with the given name")
+    public void createProject(
+            final PipeOut out,
+            @Option(name = "name", shortName = "n", required = true, help = "Name of the application to be created.")
+            final String name) {
     }
     
     /**
@@ -276,7 +285,7 @@ public class AndroidPlugin implements Plugin  {
      * 
      * @param out the out
      * @param number the emulator number
-     */
+     *//*
     @Command(value = "change-emulator", help = "Change the emulator")
     public void changeEmulator(
             final PipeOut out,
@@ -286,12 +295,12 @@ public class AndroidPlugin implements Plugin  {
     }
     // min and max verison and build environment versions(2 places)
     
-    /**
+    *//**
      * Build the application.
      * 
      * @param out the out
      * @param sdk SDK version to build
-     */
+     *//*
     @Command(value = "build", help = "Build the application")
     public void build(
     		final PipeOut out, 
@@ -299,7 +308,6 @@ public class AndroidPlugin implements Plugin  {
     	try {
 //    		shell.execute("mvn clean compile android:generate-sources android:dex android:apk");
     		String cmd = "mvn clean install -X";
-    		System.out.println("cmd > " + cmd);
 			shell.execute(cmd);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -307,121 +315,115 @@ public class AndroidPlugin implements Plugin  {
     }
     
     
-    /**
+    *//**
      * Deploy the application.
      * mvn clean install -Dandroid.device="emulator" -Dandroid.emulator.avd=default -f pom.xml
      * 
      * @param out the out
      * @param device Android device type
-     */
+     *//*
     @Command(value = "deploy", help = "Deploy the application")
     public void deploy(
     		final PipeOut out, 
     		@Option(name = "device", shortName = "d", required = false, help = "Android device type.") final String device) {
     	try {
     		String cmd = "mvn android:deploy -X";
-    		System.out.println("cmd > " + cmd);
 			shell.execute(cmd);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Undeploy the application.
      * 
      * @param out the out
      * @param device Android device type
-     */
+     *//*
     @Command(value = "undeploy", help = "undeploy the application")
     public void undeploy(
     		final PipeOut out, 
     		@Option(name = "device", shortName = "d", required = false, help = "Android device type.") final String device) {
     	try {
     		String cmd = "mvn android:undeploy -X";
-    		System.out.println("cmd > " + cmd);
 			shell.execute(cmd);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Undeploy the application.
      * 
      * @param out the out
      * @param device Android device type
-     */
+     *//*
     @Command(value = "run", help = "run the application")
     public void run(
     		final PipeOut out, 
     		@Option(name = "device", shortName = "d", required = false, help = "Android device type.") final String device) {
     	try {
     		String cmd = "mvn android:run -X";
-    		System.out.println("cmd > " + cmd);
 			shell.execute(cmd);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * list android devices.
      * 
      * @param out the out
-     */
+     *//*
     @Command(value = "devices", help = "list android devices")
     public void listDevices(
     		final PipeOut out, 
     		@Option(name = "device", shortName = "d", required = false, help = "Android device type.") final String device) {
     	try {
     		String cmd = "mvn android:devices";
-    		System.out.println("cmd > " + cmd);
 			shell.execute(cmd);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * help.
      * 
      * @param out the out
-     */
+     *//*
     @Command(value = "help", help = "help")
     public void help(final PipeOut out) {
     	try {
     		String cmd = "mvn android:help";
-    		System.out.println("cmd > " + cmd);
 			shell.execute(cmd);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * list sdks.
      * 
      * @param out the out
      * @param device Android device type
-     */
+     *//*
     @Command(value = "sdks", help = "list sdks on this machine")
     public void sdks(final PipeOut out) {
     	try {
     		String cmd = "android list targets";
-    		System.out.println("cmd > " + cmd);
 			shell.execute(cmd);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Create AVD.
      * 
      * @param out the out
      * @param device Android device type
-     */
+     *//*
     @Command(value = "avd-create", help = "create avd")
     public void createAvd(
     		final PipeOut out, 
@@ -434,20 +436,18 @@ public class AndroidPlugin implements Plugin  {
     		if (StringUtils.isNotEmpty(options)) {
     			command = command + options;
     		}
-    		System.out.println("command > " + command);
-//			shell.execute(command);
-    		Utils.executeInShell(command, null);
+    		AndroidPluginUtils.executeInShell(command, null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Move AVD.
      * 
      * @param out the out
      * @param device Android device type
-     */
+     *//*
     @Command(value = "avd-move", help = "move avd")
     public void moveAvd(
     		final PipeOut out, 
@@ -458,106 +458,258 @@ public class AndroidPlugin implements Plugin  {
     		if (StringUtils.isNotEmpty(options)) {
     			command = command + options;
     		}
-    		System.out.println("command > " + command);
 //			shell.execute(command);
-    		Utils.executeInShell(command, null);
+    		AndroidPluginUtils.executeInShell(command, null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Update AVD.
      * 
      * @param out the out
      * @param device Android device type
-     */
+     *//*
     @Command(value = "avd-update", help = "update avd")
     public void updateAvd(final PipeOut out) {
     	try {
     		String command = "avd-update";
-    		System.out.println("cmd " + command);
 //			shell.execute(cmd);
-    		Utils.executeInShell(command, null);
+    		AndroidPluginUtils.executeInShell(command, null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Delete AVD.
      * 
      * @param out the out
      * @param device Android device type
-     */
+     *//*
     @Command(value = "avd-delete", help = "delete avd")
     public void deleteAvd(
     		final PipeOut out, 
     		@Option(name = "name", shortName = "n", required = true, help = "name of the device") final String name) {
     	try {
     		String command = "android delete avd -n "+ name +" ";
-    		System.out.println("cmd " + command);
 //			shell.execute(cmd);
-    		Utils.executeInShell(command, null);
+    		AndroidPluginUtils.executeInShell(command, null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Start the emulator.
      * 
      * @param out the out
      * @param name name of the emulator
-     */
+     *//*
     @Command(value = "emulator-start", help = "start emulator")
     public void startEmulator(
     		final PipeOut out, 
     		@Option(name = "name", shortName = "n", required = true, help = "name of the emulator") final String name) {
     	try {
     		String command = "mvn android:emulator-start";
-    		System.out.println("cmd " + command);
 			shell.execute(command);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Stop the emulator.
      * 
      * @param out the out
      * @param name name of the emulator
-     */
+     *//*
     @Command(value = "emulator-stop", help = "stop emulator")
     public void stopEmulator(
     		final PipeOut out, 
     		@Option(name = "name", shortName = "n", required = true, help = "name of the emulator") final String name) {
     	try {
     		String command = "mvn android:emulator-stop";
-    		System.out.println("cmd " + command);
 			shell.execute(command);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
     
-    /**
+    *//**
      * Stop all the emulator.
      * 
      * @param out the out
      * @param name name of the emulator
-     */
+     *//*
     @Command(value = "emulator-stop-all", help = "stop all emulator")
     public void stopAllEmulator(
     		final PipeOut out, 
     		@Option(name = "name", shortName = "n", required = true, help = "name of the emulator") final String name) {
     	try {
     		String command = "mvn android:emulator-stop-all";
-    		System.out.println("cmd " + command);
 			shell.execute(command);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+    }*/
+    
+    /**
+     * Add string to string resource.
+     * 
+     * @param out the out
+     * @param stringName the string name
+     * @param stringValue the string value
+     */
+    @Command(value = "string-add", help = "Add string to String resource")
+    public void stringAdd(final PipeOut out,
+            @Option(name = "name", shortName = "n", required = true, help = "Name of string object.")
+            final String strname,
+            @Option(name = "value", shortName = "v", required = true, help = "String value")
+            final String strvalue) {
+    
+	try {
+		valuesCommandHelper(out, "res/values/strings.xml",strname,strvalue,"string");
+	} catch (Exception e) {
+
+		e.printStackTrace();
+	}
+    	
     }
+    
+    /**
+     * Add string to string resource.
+     * 
+     * @param out the out
+     * @param stringName the string name
+     * @param stringValue the string value
+     
+    @Command(value = "string-remove", help = "Add string to String resource")
+    public void stringRemove(final PipeOut out,
+            @Option(name = "name", shortName = "n", required = true, help = "Name of string object.")
+            final String strname) {
+    	
+FileResource<?> stringFile = project.getProjectRoot().getChildOfType(FileResource.class, "res/values/strings.xml");
+    
+    	if(stringFile.exists()) {
+    		System.out.println("File Exist");
+    		Node node = XMLParser.parse(stringFile.getResourceInputStream());
+    		Node stringres = node.getOrCreate("resources");
+    		
+    		System.out.println(node);
+    		System.out.println("string Name:"+stringres.getChildren());
+    		
+    		for(Node tempstringres : stringres.getChildren()){
+    			
+    			System.out.println("Name Attribute: "+tempstringres.getAttribute("name"));
+    			if (tempstringres.getAttribute("name").equals(strname))
+                {
+    				
+    				stringres.removeChild(tempstringres);
+                   out.println(strname+" is deleted from string.xml!");
+                   stringFile.setContents(XMLParser.toXMLInputStream(node));
+                  break;
+                }
+    		}
+    	}
+    	
+    }*/
+    
+    
+    /**
+     * Add color to color resource.
+     * 
+     * @param out the out
+     * @param colorname the string colrname
+     * @param hexValue the hex value
+     */
+    @Command(value = "color-add", help = "Add color to Color resource")
+    public void colorAdd(final PipeOut out,
+            @Option(name = "name", shortName = "n", required = true, help = "Name of color object.")
+            final String colrname,
+            @Option(name = "hexvalue", shortName = "v", required = true, help = "Color hexValue")
+            final String hexValue) {
+	try {
+		valuesCommandHelper(out, "res/values/color.xml",colrname,hexValue,"color");
+	} catch (Exception e) {
+		e.printStackTrace();
+	}
+    	
+    }
+    /**
+     * Add dimens to dimens resource.
+     * 
+     * @param out the out
+     * @param dimensName the dimens name
+     * @param pixel Value the pixel value
+     */
+    @Command(value = "dimens-add", help = "Add dimens to dimens resource")
+    public void dimensAdd(final PipeOut out,
+            @Option(name = "name", shortName = "n", required = true, help = "Name of dimens object.")
+            final String dmsname,
+            @Option(name = "pixel", shortName = "p", required = true, help = "pixel value")
+            final String dmsvalue) {
+    
+		try {
+			valuesCommandHelper(out, "res/values/dimens.xml",dmsname,dmsvalue,"dimen");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}	
+    }
+    
+    public void valuesCommandHelper (final PipeOut out,String valueResourceURL,String valueResourceName,String valueResourceValue,String Type) throws Exception{
+    	FileResource<?> valueFile = project.getProjectRoot().getChildOfType(FileResource.class, valueResourceURL);
+        if(valueFile.exists()) {
+	        Node node = XMLParser.parse(valueFile.getResourceInputStream());
+    		Node noderes = node.getOrCreate("resources");
+    		List<Node> tempres = noderes.getChildren();
+    		for(int i=0;i< tempres.size();i++){
+				String existingNameValue = tempres.get(i).getAttribute("name");
+				if(existingNameValue.equalsIgnoreCase(valueResourceName))
+				{
+					final int choiceIndex =shell.promptChoice(messages.getMessage("android.Value.update"),"Update","Exit");
+					   if(choiceIndex == 0){
+						   tempres.get(i).attribute("name",valueResourceName).text(valueResourceValue);
+						   valueFile.setContents(XMLParser.toXMLInputStream(node));
+						   ShellMessages.success(out,messages.getMessage("android.Value.successful"));
+						   return;}
+					   else{
+						   ShellMessages.info(out, messages.getMessage("android.Value.skip"));
+						   return;}
+				}    				
+		}
+			noderes.createChild(Type).attribute("name", valueResourceName).text(valueResourceValue);
+			valueFile.setContents(XMLParser.toXMLInputStream(node));
+			ShellMessages.success(out, messages.getMessage("android.Value.successful"));	
+	    }
+    }
+    
+    public void fileCreatHelper (final PipeOut outln,final Project project,String fileName ,String templateName,Map<String, TemplateSettings> Context,String type) throws IOException, TemplateException{
+    	DirectoryResource projectRoot = project.getProjectRoot();
+    	DirectoryResource resDirectory = projectRoot.getOrCreateChildDirectory("res");
+    	DirectoryResource valuesDirectory = resDirectory.getOrCreateChildDirectory("values");
+    	if(type == "file"){
+	    	FileResource<?> File = (FileResource<?>) valuesDirectory.getChild(fileName);
+			if (!File.exists()) {
+				File FileObj = new File(valuesDirectory.getUnderlyingResourceObject().getPath() + System.getProperty("file.separator") + fileName);
+				AndroidPluginUtils.createResourceFileUsingTemplate(project, templateName, FileObj, Context);
+				ShellMessages.info(outln, String.format(messages.getKeyValue("SUCCESS_MSG_FMT"), fileName, "file"));
+			}
+    	}
+    	else{
+    		InputStream stream = null;
+    		DirectoryResource layoutDirectory = resDirectory.getOrCreateChildDirectory("layout");
+    		FileResource<?> defaultPropFile = (FileResource<?>) layoutDirectory.getChild(fileName);
+    		if (!defaultPropFile.exists()) {
+    			stream = AndroidPlugin.class.getResourceAsStream(templateName);
+    			defaultPropFile.setContents(stream);
+    			ShellMessages.info(outln,String.format(messages.getKeyValue("SUCCESS_MSG_FMT"), fileName, "stream"));
+    		}
+    	}
+    }
+    
+    
+    
+  
 }
