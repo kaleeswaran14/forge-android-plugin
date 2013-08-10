@@ -39,6 +39,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.Repository;
 import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.jboss.forge.maven.MavenCoreFacet;
@@ -70,8 +71,6 @@ import org.jboss.forge.shell.plugins.RequiresFacet;
 @Alias("org.android")
 @RequiresFacet({ DependencyFacet.class })
 public class AndroidFacet extends BaseFacet {
-	private static final String PACKAGING_TYPE_APK = "apk";
-	
     public static final String SUCCESS_MSG_FMT = "***SUCCESS*** %s %s has been installed.";
 
     /** The shell prompt. */
@@ -100,8 +99,10 @@ public class AndroidFacet extends BaseFacet {
         installDependencies(getAndroidCoreDependency(), false);
         installplugin(androidBuildPlugin());
 
+        removeRepository(getJbossRepository());
+        
         setPackaging(messages.getKeyValue("PACKAGING_TYPE_APK"));
-        String platformVersion = this.shellPrompt.prompt("What platform version do you want to use ? e.g (3.0, 4.0, 4.0.3) ");
+        String platformVersion = this.shellPrompt.prompt("What platform version do you want to use ? e.g (3.0, 4.0, 4.0.3) : ");
         setProperty("platform.version", platformVersion);
         
         final DirectoryResource projectRoot = this.project.getProjectRoot();
@@ -129,16 +130,16 @@ public class AndroidFacet extends BaseFacet {
 		copyIcons(iconResources);
 		
         final MetadataFacet metadata = this.project.getFacet(MetadataFacet.class);
-        final PackagingFacet packagingFacet = this.project.getFacet(PackagingFacet.class);
         
         final String projectName = metadata.getProjectName();
-        final TemplateSettings settings = new TemplateSettings(capitalize(projectName) + "Activity", metadata.getTopLevelPackage());
+        String activityPackage = metadata.getTopLevelPackage() + ".activity";
+        final TemplateSettings settings = new TemplateSettings(capitalize(projectName) + "Activity", activityPackage);
         // app name value which will be inserted in manifest and strings.xml
         settings.setActivityLabelKey("app_name");
         settings.setActivityLabelValue(projectName);
 
         final Map<String, TemplateSettings> context = new HashMap<String, TemplateSettings>();
-        settings.setTopLevelPacakge(metadata.getTopLevelPackage());
+		settings.setTopLevelPacakge(activityPackage);
         context.put("settings", settings);
         try {
             createJavaFileUsingTemplate(this.project, "TemplateActivity.ftl", context);
@@ -289,7 +290,30 @@ public class AndroidFacet extends BaseFacet {
         	facet.setPOM(pom);
     	}
     }
+    
+    /**
+     * Method to remove the specified repository.
+     * 
+     * @param Repository the repository
+     */
+    private void removeRepository(Repository repository) {
+        final MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
+        final Model pom = facet.getPOM();
+    	pom.removeRepository(repository);
+    	facet.setPOM(pom);
+    }
 
+    /**
+     * Method to return the jboss repository.
+     * 
+     * @param Repository the repository
+     */
+    private Repository getJbossRepository() {
+    	Repository repository = new Repository();
+    	repository.setId("JBOSS_NEXUS");
+    	repository.setUrl("http://repository.jboss.org/nexus/content/groups/public");
+    	return repository;
+    }
   
 
     /**

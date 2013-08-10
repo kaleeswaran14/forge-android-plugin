@@ -140,9 +140,8 @@ public final class AndroidPluginUtils {
         }
         
         if (!activityFound) { // when the activity is not found
-        	Node newActivityNode = applicationNode.createChild("activity").attribute("android:name", activityName);
+        	Node newActivityNode = applicationNode.createChild("activity").attribute("android:name", "." + activityName);
         	if (isLaunchActivity) {
-        		System.out.println("launch activity data adding ... ");
         		Node intentFilter = newActivityNode.createChild("intent-filter");
 				intentFilter.createChild("action").attribute("android:name", "android.intent.action.MAIN");
 				intentFilter.createChild("action").attribute("android:name", "android.intent.category.LAUNCHER");
