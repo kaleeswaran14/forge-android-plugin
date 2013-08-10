@@ -1,7 +1,5 @@
 package in.jugchennai.forge.android.utils;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -9,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -156,18 +155,17 @@ public final class AndroidPluginUtils {
 		return true;
 	}
 	
-	public static void copyImage(InputStream from, File targetFile) {
+	public static void copyImage(InputStream inStream, File targetFile) {
 		try {
-			BufferedInputStream bis = new BufferedInputStream(from, 4096);
-			BufferedOutputStream bos = new BufferedOutputStream(
-					new FileOutputStream(targetFile), 4096);
-			int theChar;
-			while ((theChar = bis.read()) != -1) {
-				bos.write(theChar);
-			}
-			bos.close();
-			bis.close();
-			System.out.println("copy done!");
+    	    OutputStream outStream = null;
+    	    outStream = new FileOutputStream(targetFile);
+    	    byte[] buffer = new byte[1024];
+    	    int length;
+    	    while ((length = inStream.read(buffer)) > 0){
+    	    	outStream.write(buffer, 0, length);
+    	    }
+    	    inStream.close();
+    	    outStream.close();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}

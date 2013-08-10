@@ -16,9 +16,10 @@
 package in.jugchennai.forge.android;
 
 import static in.jugchennai.forge.android.utils.AndroidPluginUtils.capitalize;
-import static in.jugchennai.forge.android.utils.AndroidPluginUtils.createResourceFileUsingTemplate;
 import static in.jugchennai.forge.android.utils.AndroidPluginUtils.createJavaFileUsingTemplate;
+import static in.jugchennai.forge.android.utils.AndroidPluginUtils.createResourceFileUsingTemplate;
 import freemarker.template.TemplateException;
+import in.jugchennai.forge.android.utils.AndroidPluginUtils;
 import in.jugchennai.forge.android.utils.MessageUtil;
 import in.jugchennai.forge.android.utils.TemplateSettings;
 
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,12 +111,23 @@ public class AndroidFacet extends BaseFacet {
         final DirectoryResource resDirectory = projectRoot.getOrCreateChildDirectory("res");
 
         resDirectory.getChildDirectory("layout").mkdir();
-//        resDirectory.getChildDirectory("drawables").mkdir();
-        resDirectory.getChildDirectory("drawable-hdpi").mkdir();
-        resDirectory.getChildDirectory("drawable-ldpi").mkdir();
-        resDirectory.getChildDirectory("drawable-mdpi").mkdir();
         resDirectory.getChildDirectory("values").mkdir();
+//      resDirectory.getChildDirectory("drawables").mkdir();
+		DirectoryResource drawableHDPIDirectory = resDirectory.getOrCreateChildDirectory("drawable-hdpi");
+		DirectoryResource drawableLDPIDirectory = resDirectory.getOrCreateChildDirectory("drawable-ldpi");
+		DirectoryResource drawableMDPIDirectory = resDirectory.getOrCreateChildDirectory("drawable-mdpi");
 
+		// create icons
+		List<FileResource<?>> iconResources = new ArrayList<FileResource<?>>(3);
+		FileResource<?> hdpiIconFile =  (FileResource<?>) drawableHDPIDirectory.getChild("icon.png");
+		FileResource<?> ldpiIconFile =  (FileResource<?>) drawableLDPIDirectory.getChild("icon.png");
+		FileResource<?> mdpiIconFile =  (FileResource<?>) drawableMDPIDirectory.getChild("icon.png");
+		iconResources.add(hdpiIconFile);
+		iconResources.add(ldpiIconFile);
+		iconResources.add(mdpiIconFile);
+		
+		copyIcons(iconResources);
+		
         final MetadataFacet metadata = this.project.getFacet(MetadataFacet.class);
         final PackagingFacet packagingFacet = this.project.getFacet(PackagingFacet.class);
         
@@ -200,6 +213,23 @@ public class AndroidFacet extends BaseFacet {
 
         return true;
     }
+
+	/**
+	 * @param iconResources
+	 */
+	private void copyIcons(List<FileResource<?>> iconResources) {
+		InputStream stream;
+		if (CollectionUtils.isNotEmpty(iconResources)) {
+			for (FileResource<?> iconResource : iconResources) {
+				if (!iconResource.exists()) {
+					stream = AndroidPlugin.class.getResourceAsStream("/templates/icon.png");
+					File iconFolder = iconResource.getUnderlyingResourceObject().getAbsoluteFile();
+					AndroidPluginUtils.copyImage(stream, iconFolder);
+					ShellMessages.info(this.writer, String.format(AndroidFacet.SUCCESS_MSG_FMT, "icons.png", "icon"));
+				}
+			}
+		}
+	}
 
     @Override
     public boolean isInstalled() {
