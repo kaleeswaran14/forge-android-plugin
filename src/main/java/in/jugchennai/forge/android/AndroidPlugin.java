@@ -96,7 +96,6 @@ public class AndroidPlugin implements Plugin {
      */
     @SetupCommand(help = "Installs basic setup to work with Android application.")
     public void setup(final PipeOut out) throws IOException, TemplateException {
-        // , @Option(name = "module", shortName = "m", required = true, help = "The Module name to be installed.") final String moduleName
         if (!this.project.hasFacet(AndroidFacet.class)) {
             this.install.fire(new InstallFacets(AndroidFacet.class));
         }
@@ -213,7 +212,6 @@ public class AndroidPlugin implements Plugin {
             @Option(name = "device", shortName = "d", required = false, help = "Android device type.")
             final String device) {
         try {
-
             shell.execute("mvn android:deploy -X");
         } catch (Exception e) {
             e.printStackTrace();
@@ -233,6 +231,24 @@ public class AndroidPlugin implements Plugin {
             final String device) {
         try {
             shell.execute("mvn android:undeploy -X");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Redeploy the application.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "redeploy", help = "undeploy the application")
+    public void redeploy(
+            final PipeOut out,
+            @Option(name = "device", shortName = "d", required = false, help = "Android device type.")
+            final String device) {
+        try {
+            shell.execute("mvn android:redeploy -X");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -267,7 +283,6 @@ public class AndroidPlugin implements Plugin {
             @Option(name = "device", shortName = "d", required = false, help = "Android device type.")
             final String device) {
         try {
-
             shell.execute("mvn android:devices");
         } catch (Exception e) {
             e.printStackTrace();
@@ -288,6 +303,22 @@ public class AndroidPlugin implements Plugin {
         }
     }
 
+    /**
+     * list sdks.
+     * 
+     * @param out the out
+     * @param device Android device type
+     */
+    @Command(value = "sdks", help = "list sdks on this machine")
+    public void sdks(final PipeOut out) {
+    	try {
+    		String cmd = "android list targets";
+			shell.execute(cmd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
     /**
      * Create AVD.
      * 
@@ -445,7 +476,6 @@ public class AndroidPlugin implements Plugin {
         try {
             valuesCommandHelper(out, "res/values/strings.xml", strname, strvalue, "string");
         } catch (Exception e) {
-
             e.printStackTrace();
         }
 

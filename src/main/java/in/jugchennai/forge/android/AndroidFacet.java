@@ -32,6 +32,7 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
@@ -52,6 +53,7 @@ import org.jboss.forge.shell.Shell;
 import org.jboss.forge.shell.ShellColor;
 import org.jboss.forge.shell.ShellMessages;
 import org.jboss.forge.shell.ShellPrintWriter;
+import org.jboss.forge.shell.ShellPrompt;
 import org.jboss.forge.shell.plugins.Alias;
 import org.jboss.forge.shell.plugins.RequiresFacet;
 
@@ -66,8 +68,14 @@ import org.jboss.forge.shell.plugins.RequiresFacet;
 @Alias("org.android")
 @RequiresFacet({ DependencyFacet.class })
 public class AndroidFacet extends BaseFacet {
+	private static final String PACKAGING_TYPE_APK = "apk";
+	
     public static final String SUCCESS_MSG_FMT = "***SUCCESS*** %s %s has been installed.";
 
+    /** The shell prompt. */
+    @Inject
+    private ShellPrompt shellPrompt;
+    
     /** The shell. */
     @Inject
     private Shell shell;
@@ -87,9 +95,13 @@ public class AndroidFacet extends BaseFacet {
             this.writer.println(ShellColor.RED, "Android Home is not set in environment variable ");
             return false;
         }
-        installDependencies(getAndroidCoreDependency(), true);
+        installDependencies(getAndroidCoreDependency(), false);
         installplugin(androidBuildPlugin());
 
+        setPackaging(messages.getKeyValue("PACKAGING_TYPE_APK"));
+        String platformVersion = this.shellPrompt.prompt("What platform version do you want to use ? e.g (3.0, 4.0, 4.0.3) ");
+        setProperty("platform.version", platformVersion);
+        
         final DirectoryResource projectRoot = this.project.getProjectRoot();
 
         projectRoot.getChildDirectory("assets").mkdir();
@@ -97,7 +109,7 @@ public class AndroidFacet extends BaseFacet {
         final DirectoryResource resDirectory = projectRoot.getOrCreateChildDirectory("res");
 
         resDirectory.getChildDirectory("layout").mkdir();
-        resDirectory.getChildDirectory("drawables").mkdir();
+//        resDirectory.getChildDirectory("drawables").mkdir();
         resDirectory.getChildDirectory("drawable-hdpi").mkdir();
         resDirectory.getChildDirectory("drawable-ldpi").mkdir();
         resDirectory.getChildDirectory("drawable-mdpi").mkdir();
@@ -224,7 +236,7 @@ public class AndroidFacet extends BaseFacet {
      * @return the dependency builder
      */
     private static DependencyBuilder getAndroidCoreDependency() {
-        return DependencyBuilder.create().setGroupId("com.google.android").setArtifactId("android").setVersion("4.1.1.4").setScopeType("provided");
+    	return DependencyBuilder.create().setGroupId("com.google.android").setArtifactId("android").setVersion("${platform.version}").setScopeType("provided");
     }
 
     /**
@@ -240,8 +252,12 @@ public class AndroidFacet extends BaseFacet {
             build = new Build();
             pom.setBuild(build);
         }
-        pom.getBuild().addPlugin(plugin);
-        facet.setPOM(pom);
+     // If the plugin is not available in pom.xml, add the dependency
+    	List<Plugin> plugins = pom.getBuild().getPlugins();
+    	if (CollectionUtils.isNotEmpty(plugins) && !plugins.contains(plugin)) {
+        	pom.getBuild().addPlugin(plugin);
+        	facet.setPOM(pom);
+    	}
     }
 
   
@@ -254,10 +270,10 @@ public class AndroidFacet extends BaseFacet {
     private Plugin androidBuildPlugin() {
         final Plugin mavenAndroidPlugin = new Plugin();
         mavenAndroidPlugin.setGroupId("com.jayway.maven.plugins.android.generation2");
-        mavenAndroidPlugin.setArtifactId("maven-android-plugin");
-        mavenAndroidPlugin.setConfiguration(pluginConfiguration("7"));
-        mavenAndroidPlugin.setVersion("2.8.4");
-        mavenAndroidPlugin.setExtensions(true);
+    	mavenAndroidPlugin.setArtifactId("android-maven-plugin");
+    	mavenAndroidPlugin.setConfiguration(pluginConfiguration("${platform.version}"));
+    	mavenAndroidPlugin.setVersion("3.6.0");
+    	mavenAndroidPlugin.setExtensions(true);
         return mavenAndroidPlugin;
     }
 
@@ -303,13 +319,38 @@ public class AndroidFacet extends BaseFacet {
         else {
             InputStream stream = null;
             final DirectoryResource layoutDirectory = resDirectory.getOrCreateChildDirectory("layout");
-            final FileResource<?> defaultPropFile = (FileResource<?>) layoutDirectory.getChild(fileName);
-            if (!defaultPropFile.exists()) {
+            final FileResource<?> layoutMainFile = (FileResource<?>) layoutDirectory.getChild(fileName);
+            if (!layoutMainFile.exists()) {
                 stream = AndroidPlugin.class.getResourceAsStream(templateName);
-                defaultPropFile.setContents(stream);
+                layoutMainFile.setContents(stream);
                 ShellMessages.info(this.writer, String.format(messages.getKeyValue("SUCCESS_MSG_FMT"), fileName, "stream"));
             }
         }
+    }
+    
+    /**
+     * Method to set the packaging type into the project.
+     * 
+     * @param packagingType packagingType
+     */
+    private void setPackaging(final String packagingType) {
+    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
+    	Model pom = facet.getPOM();
+    	pom.setPackaging(packagingType);
+    	facet.setPOM(pom);
+    }
+    
+    /**
+     * Method to set the property values.
+     * 
+     * @param key key
+     * @param value value
+     */
+    private void setProperty(final String key, final String value) {
+    	MavenCoreFacet facet = this.project.getFacet(MavenCoreFacet.class);
+    	Model pom = facet.getPOM();
+    	pom.addProperty(key, value);
+    	facet.setPOM(pom);
     }
 
 }
